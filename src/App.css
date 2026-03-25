@@ -1,0 +1,30 @@
+/* Specific App styles supplementing index.css */
+
+.app-container {
+  min-height: 100vh;
+  background: var(--bg-primary);
+}
+
+.app-header {
+  position: relative;
+  top: 1rem;
+  margin: 0 var(--spacing-md);
+  z-index: 100;
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.9);
+  border-bottom: 3px solid var(--accent-primary);
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}

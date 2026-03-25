@@ -1,0 +1,215 @@
+/* Invoice Modal Overlay */
+.invoice-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: fadeIn 0.3s ease;
+}
+
+.invoice-modal {
+    background: transparent;
+    max-height: 95vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.invoice-paper {
+    background: white;
+    width: 210mm;
+    /* A4 width */
+    min-height: 297mm;
+    /* A4 height */
+    padding: 20mm;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    margin: 1rem;
+    color: #333;
+    font-family: 'Inter', sans-serif;
+}
+
+.invoice-controls {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    padding: 1rem;
+    background: white;
+    margin: 0 1rem;
+    border-radius: 8px 8px 0 0;
+    position: sticky;
+    top: 0;
+}
+
+.primary-btn {
+    background: var(--brand-orange);
+    /* BRAND ORANGE */
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+}
+
+.close-btn {
+    background: transparent;
+    border: 1px solid #ccc;
+    padding: 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* Invoice Content Styles */
+.invoice-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 3rem;
+    border-bottom: 2px solid var(--brand-turquoise);
+    /* BRAND TURQUOISE */
+    padding-bottom: 2rem;
+}
+
+.invoice-logo {
+    height: 50px;
+    margin-bottom: 1rem;
+}
+
+.company-details {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.company-details h3 {
+    margin: 0 0 0.5rem 0;
+    color: var(--brand-orange);
+}
+
+.invoice-meta h1 {
+    font-size: 2.5rem;
+    color: var(--brand-turquoise);
+    margin: 0 0 1rem 0;
+    text-align: right;
+}
+
+.invoice-meta table td {
+    padding: 0.25rem 0.5rem;
+    text-align: right;
+}
+
+.invoice-bill-to {
+    margin-bottom: 3rem;
+}
+
+.invoice-bill-to h4 {
+    color: #999;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    margin-bottom: 0.5rem;
+}
+
+.bill-name {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.invoice-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 3rem;
+}
+
+.invoice-table th {
+    border-bottom: 2px solid #eee;
+    padding: 0.75rem;
+    text-align: left;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.invoice-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #eee;
+}
+
+.item-desc {
+    font-weight: 500;
+}
+
+.item-period {
+    font-size: 0.75rem;
+    color: #888;
+}
+
+.total-label {
+    text-align: right;
+    font-weight: 600;
+    padding-right: 2rem;
+}
+
+.total-value {
+    text-align: right;
+    font-weight: 600;
+}
+
+.grand-total-row td {
+    border-top: 2px solid #333;
+    font-size: 1.25rem;
+    color: var(--brand-orange);
+    padding-top: 1rem;
+}
+
+.invoice-footer {
+    text-align: center;
+    color: #888;
+    font-size: 0.9rem;
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px dashed #ddd;
+}
+
+/* PRINT STYLES */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+
+    #invoice-print-area,
+    #invoice-print-area * {
+        visibility: visible;
+    }
+
+    .invoice-overlay {
+        position: absolute;
+        left: 0;
+        top: 0;
+        background: white;
+        display: block;
+    }
+
+    .invoice-modal {
+        max-height: none;
+        overflow: visible;
+        margin: 0;
+    }
+
+    .invoice-paper {
+        margin: 0;
+        box-shadow: none;
+        width: 100%;
+        position: absolute;
+        left: 0;
+        top: 0;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+}
