@@ -15,7 +15,6 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - **UI Improvements**: Refined `Column Chooser` with a grid layout and better visibility.
 - **UI Improvements**: Aligned text in `History Modal` using CSS Grid.
-- **Branding**: Replaced all "SEVENP" branding with generic "Partner Center" or "Microsoft" assets for open source neutrality.
 - **Privacy**: Added explicit privacy notices to the Upload screen.
 
 ### Fixed
