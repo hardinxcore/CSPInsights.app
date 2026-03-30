@@ -1010,9 +1010,9 @@ export const EarningsView: React.FC = () => {
 
                     <div className="glass-panel" style={{ border: '1px solid var(--border-color)', overflow: 'auto', maxHeight: '60vh' }}>
                         <RecordsTable records={filteredRecords} currency={currency} />
-                        {filteredRecords.length > 300 && (
+                        {filteredRecords.length > 500 && (
                             <div style={{ padding: '0.75rem 1rem', fontSize: '0.85rem', color: 'var(--text-tertiary)', borderTop: '1px solid var(--border-color)', textAlign: 'center' }}>
-                                Showing first 300 of {filteredRecords.length.toLocaleString('nl-NL')}. Use Export Excel for the full dataset.
+                                Showing first 500 of {filteredRecords.length.toLocaleString('nl-NL')}. Use Export Excel for the full dataset.
                             </div>
                         )}
                     </div>
