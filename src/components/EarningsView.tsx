@@ -612,8 +612,9 @@ export const EarningsView: React.FC = () => {
     };
 
     const handleCustomerBarClick = (entry: any) => {
-        if (!entry?.name) return;
-        setDrillCustomer(entry.name);
+        const customerName = entry?.customerName ?? entry?.activePayload?.[0]?.payload?.customerName;
+        if (!customerName) return;
+        setDrillCustomer(customerName);
     };
 
     const toggleCustSort = (key: string) =>
