@@ -478,7 +478,7 @@ export const EarningsView: React.FC = () => {
         [data]
     );
     const nextPayment = useMemo(() => {
-        const months = [...new Set(data.map(r => r.estimatedPaymentMonth).filter(Boolean))];
+        const months = [...new Set(data.map(r => r.estimatedPaymentMonth).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b)));
         return months[0] || null;
     }, [data]);
 
