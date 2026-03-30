@@ -218,7 +218,7 @@ export const RenewalCalendar: React.FC = () => {
 
             const termCategory = classifyTerm(row.TermAndBillingCycle);
             // EST applies to annual/multi-year subscriptions whose end date is on or after
-            // the EST launch date (2025-05-05) and that are now past their end date.
+            // the EST launch date (2025-05-04) and that are now past their end date.
             // Subscriptions expired before EST launch fall under the old grace period model.
             // Monthly (Flex) and Trial are excluded — they auto-renew or expire normally.
             const isInEST = daysUntil < 0
