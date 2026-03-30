@@ -11,7 +11,7 @@ const toNum = (val: any): number => {
     return 0;
 };
 
-const toStr = (val: any): string => (val != null ? String(val) : '');
+const toStr = (val: any): string => (val != null ? String(val).trim() : '');
 
 self.onmessage = async (e: MessageEvent) => {
     const { files } = e.data;
