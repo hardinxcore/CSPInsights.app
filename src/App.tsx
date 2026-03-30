@@ -325,7 +325,7 @@ function App() {
       </main>
 
       <footer style={{ textAlign: 'center', padding: '2rem 1rem 1rem', color: 'var(--text-tertiary)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-        <span>CSP Insights v1.0.0</span>
+        <span>CSP Insights v1.2.0</span>
         <span style={{ opacity: 0.4 }}>|</span>
         <a href="https://github.com/hardinxcore/cspinsights.app" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-tertiary)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
           GitHub <ExternalLink size={12} />
