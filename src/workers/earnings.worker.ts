@@ -30,8 +30,8 @@ self.onmessage = async (e: MessageEvent) => {
 
                     const lines = text.split(/\r\n|\n|\r/);
                     const foundIndex = lines.findIndex(line => {
-                        const normalized = line.replace(/['"]/g, '');
-                        return EXPECTED_COLUMNS.filter(col => normalized.includes(col)).length >= 2;
+                        const normalized = line.replace(/['"]/g, '').toLowerCase();
+                        return EXPECTED_COLUMNS.filter(col => normalized.includes(col.toLowerCase())).length >= 2;
                     });
                     if (foundIndex > -1) headerRowIndex = foundIndex;
 
