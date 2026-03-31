@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Live App](https://img.shields.io/badge/Live-cspinsights.app-6366f1)](https://cspinsights.app)
 
-**A free, local-first billing reconciliation and pricing management toolkit for Microsoft CSP Direct (Tier 1) partners.**
+**A free, local-first billing reconciliation, pricing management, and incentives analytics toolkit for Microsoft CSP Direct (Tier 1) partners.**
 
 > Your data never leaves your browser. No backend, no account, no cloud uploads.
 
@@ -13,7 +13,7 @@
 
 ## Why CSP Insights?
 
-Managing Microsoft CSP operations means wrestling with massive reconciliation CSVs and complex price lists every month. CSP Insights gives you immediate visual clarity and powerful tools — without backend servers or third-party data processing.
+Managing Microsoft CSP operations means wrestling with massive reconciliation CSVs, complex price lists, and incentive earnings reports every month. CSP Insights gives you immediate visual clarity and powerful tools — without backend servers or third-party data processing.
 
 ## Features
 
@@ -37,6 +37,21 @@ Managing Microsoft CSP operations means wrestling with massive reconciliation CS
 - **Version comparison** — load two price lists and spot price changes
 - **Shopping cart & quotes** — build a cart and export professional PDF quotes
 
+### Incentives & Earnings
+- **Earnings Report** — import the Partner Center Incentives → Earnings → Export (Default) CSV
+  - Dashboard with total earnings, customer count, product count, and program breakdown
+  - Earnings over time (monthly bar chart)
+  - Top customers and top products by earning amount
+  - Drill-down: click a customer or product to open a detail view with per-lever and per-product charts
+  - Full records table with search filter and sortable columns
+- **Payments Report** — import the Partner Center Incentives → Payments CSV
+  - Summary cards: total earned, total paid, total tax withheld, and payment count
+  - Payments by month chart (grouped earned vs. paid)
+  - Payment method breakdown with color-coded horizontal bar
+  - Sortable payments table with status, date, and amounts
+- **Multi-file upload** — append multiple CSV exports to build a combined dataset
+- **Session persistence** — earnings and payment data survive page refreshes via IndexedDB
+
 ### Data Management
 - **Snapshots** — save and restore billing data and pricing catalogs
 - **Backup & restore** — export/import all your data
@@ -49,6 +64,17 @@ Managing Microsoft CSP operations means wrestling with massive reconciliation CS
 - **IndexedDB storage** — data persists locally between sessions
 - **No telemetry** — no analytics, no tracking, no data collection
 - Clearing your browser data removes everything
+
+## Data Sources
+
+| Report | Where to export in Partner Center |
+|--------|----------------------------------|
+| Billing reconciliation | Billing → Reconciliation → Download CSV |
+| CSP price list | Pricing → License-based / Usage-based → Download |
+| Incentives Earnings | Incentives → Earnings → Export → Default |
+| Incentives Payments | Incentives → Payments → Export |
+
+All files are processed entirely in your browser. Nothing is uploaded anywhere.
 
 ## Getting Started
 

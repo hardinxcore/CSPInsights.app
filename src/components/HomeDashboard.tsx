@@ -1,16 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { BarChart3, Tag, ArrowRight, Clock, RotateCcw } from 'lucide-react';
+import { BarChart3, Tag, ArrowRight, Clock, RotateCcw, TrendingUp } from 'lucide-react';
 import { useBillingStore } from '../store/billingStore';
 import { useSnapshotStore } from '../store/snapshotStore';
 import { usePricingStore } from '../store/pricingStore';
+import { useEarningsStore } from '../store/earningsStore';
 
 interface HomeDashboardProps {
-    onNavigate: (view: 'billing' | 'pricing') => void;
+    onNavigate: (view: 'billing' | 'pricing' | 'incentives') => void;
 }
 
 export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
     // Stores
     const { meta: billingMeta, data: billingData } = useBillingStore();
+    const { meta: earningsMeta, data: earningsData } = useEarningsStore();
     const { snapshots: billingSnapshots, loadSnapshots: loadBillingSnapshots, restoreSnapshot: restoreBillingSnapshot } = useSnapshotStore();
     const { snapshots: pricingSnapshots, loadSnapshots: loadPricingSnapshots, restoreSnapshot: restorePricingSnapshot } = usePricingStore();
 
@@ -28,6 +30,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
     ].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 3);
 
     const hasActiveSession = billingData && billingData.length > 0;
+    const hasActiveEarnings = earningsData && earningsData.length > 0;
 
     const handleRestore = async (snap: typeof recentActivity[0]) => {
         if (confirm(`Restore "${snap.name || 'Untitled'}"? This will overwrite active data.`)) {
@@ -55,7 +58,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
             </div>
 
             {/* Main Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', maxWidth: '900px', margin: '0 auto' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem', maxWidth: '1100px', margin: '0 auto' }}>
                 {/* Billing Card */}
                 <div
                     className="glass-panel"
@@ -155,6 +158,69 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                     </div>
                     <div style={{ marginTop: 'auto', paddingTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--brand-orange)', fontWeight: 600 }}>
                         Open Catalog <ArrowRight size={18} />
+                    </div>
+                </div>
+
+                {/* Incentives Card */}
+                <div
+                    className="glass-panel"
+                    onClick={() => onNavigate('incentives')}
+                    style={{
+                        padding: '2rem',
+                        cursor: 'pointer',
+                        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                        display: 'flex', flexDirection: 'column', gap: '1rem',
+                        border: '1px solid var(--border-color)',
+                        position: 'relative', overflow: 'hidden'
+                    }}
+                    onMouseEnter={e => {
+                        e.currentTarget.style.transform = 'translateY(-5px)';
+                        e.currentTarget.style.boxShadow = '0 10px 30px rgba(0,0,0,0.1)';
+                    }}
+                    onMouseLeave={e => {
+                        e.currentTarget.style.transform = 'none';
+                        e.currentTarget.style.boxShadow = 'none';
+                    }}
+                >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div style={{
+                            width: '50px', height: '50px', borderRadius: '12px',
+                            background: 'rgba(16, 185, 129, 0.1)', color: '#10B981',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                        }}>
+                            <TrendingUp size={24} />
+                        </div>
+                        {hasActiveEarnings && (
+                            <span style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', borderRadius: '1rem', background: 'rgba(16, 185, 129, 0.1)', color: '#10B981', fontWeight: 600 }}>
+                                Active Session
+                            </span>
+                        )}
+                    </div>
+
+                    <div>
+                        <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Incentives &amp; Earnings</h2>
+                        <p style={{ color: 'var(--text-tertiary)', lineHeight: '1.5', fontSize: '0.95rem' }}>
+                            Analyze Partner Center incentive earnings, levers, and estimated payments.
+                        </p>
+                    </div>
+
+                    {hasActiveEarnings && earningsMeta && (
+                        <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <div>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>Earnings</div>
+                                <div style={{ fontWeight: 600, color: '#10B981' }}>
+                                    {new Intl.NumberFormat('nl-NL', { style: 'currency', currency: earningsMeta.currency || 'EUR', maximumFractionDigits: 0 }).format(earningsMeta.totalEarningAmount)}
+                                </div>
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>Customers</div>
+                                <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{earningsMeta.customersCount}</div>
+                            </div>
+                        </div>
+                    )}
+
+                    <div style={{ marginTop: 'auto', paddingTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#10B981', fontWeight: 600 }}>
+                        {hasActiveEarnings ? 'Continue Analysis' : 'Start Analysis'} <ArrowRight size={18} />
                     </div>
                 </div>
             </div>

@@ -1,7 +1,7 @@
 {
   "name": "csp-insights",
-  "version": "1.0.0",
-  "description": "A local-first billing reconciliation and pricing management toolkit for Microsoft CSP Direct partners",
+  "version": "1.2.0",
+  "description": "A local-first billing reconciliation, pricing management, and incentives analytics toolkit for Microsoft CSP Direct partners",
   "homepage": "https://cspinsights.app",
   "license": "MIT",
   "type": "module",
