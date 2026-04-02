@@ -10,10 +10,11 @@ import { useEarningsStore } from './store/earningsStore';
 import { AzureAnalyzer } from './components/AzureAnalyzer';
 import { NceAnalyzer } from './components/NceAnalyzer';
 import { RenewalCalendar } from './components/RenewalCalendar';
+import { CostTimeline } from './components/CostTimeline';
 import { PricingView } from './components/PricingView';
 import { HomeDashboard } from './components/HomeDashboard';
 import { EarningsView } from './components/EarningsView';
-import { Loader2, Settings, History, Sun, Moon, Search, LayoutGrid, BarChart3, Cloud, ShieldCheck, ExternalLink, TrendingUp, CalendarDays } from 'lucide-react';
+import { Loader2, Settings, History, Sun, Moon, Search, LayoutGrid, BarChart3, Cloud, ShieldCheck, ExternalLink, TrendingUp, CalendarDays, LineChart } from 'lucide-react';
 import { generateDemoData } from './utils/demoData';
 import './App.css';
 
@@ -35,7 +36,7 @@ function App() {
   const { loadFromDisk: loadEarningsFromDisk } = useEarningsStore();
 
   // Navigation State
-  const [currentView, setCurrentView] = useState<'home' | 'dashboard' | 'settings' | 'azure' | 'nce' | 'renewals' | 'pricing' | 'incentives'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'dashboard' | 'settings' | 'azure' | 'nce' | 'renewals' | 'timeline' | 'pricing' | 'incentives'>('home');
   const [showHistory, setShowHistory] = useState(false);
   const [isUploading, setIsUploading] = useState(false); // New state to control upload view overlay
 
@@ -116,7 +117,7 @@ function App() {
           </div>
 
           {/* Search Section */}
-          <div className="flex-center" style={{ flex: 1, justifyContent: 'center', padding: '0 2rem', opacity: (currentView === 'home' || currentView === 'pricing' || currentView === 'settings' || currentView === 'incentives' || currentView === 'renewals') ? 0 : 1, pointerEvents: (currentView === 'home' || currentView === 'pricing' || currentView === 'settings' || currentView === 'incentives' || currentView === 'renewals') ? 'none' : 'auto' }}>
+          <div className="flex-center" style={{ flex: 1, justifyContent: 'center', padding: '0 2rem', opacity: (currentView === 'home' || currentView === 'pricing' || currentView === 'settings' || currentView === 'incentives' || currentView === 'renewals' || currentView === 'timeline') ? 0 : 1, pointerEvents: (currentView === 'home' || currentView === 'pricing' || currentView === 'settings' || currentView === 'incentives' || currentView === 'renewals' || currentView === 'timeline') ? 'none' : 'auto' }}>
             <div style={{ position: 'relative', width: '100%', maxWidth: '500px' }}>
               <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
               <input
@@ -166,7 +167,7 @@ function App() {
             >
               <LayoutGrid size={20} />
             </button>
-            {(currentView === 'dashboard' || currentView === 'azure' || currentView === 'nce' || currentView === 'renewals' || currentView === 'pricing' || currentView === 'incentives') && (
+            {(currentView === 'dashboard' || currentView === 'azure' || currentView === 'nce' || currentView === 'renewals' || currentView === 'timeline' || currentView === 'pricing' || currentView === 'incentives') && (
               <button
                 onClick={() => setShowHistory(true)}
                 className="secondary-btn"
@@ -224,7 +225,7 @@ function App() {
           </div>
         )}
 
-        {(currentView === 'dashboard' || currentView === 'azure' || currentView === 'nce' || currentView === 'renewals') && (
+        {(currentView === 'dashboard' || currentView === 'azure' || currentView === 'nce' || currentView === 'renewals' || currentView === 'timeline') && (
           <>
             {showDashboard && (
               <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
@@ -272,6 +273,17 @@ function App() {
                 >
                   <CalendarDays size={18} /> Renewal Calendar
                 </button>
+                <button
+                  onClick={() => setCurrentView('timeline')}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '0.5rem',
+                    borderBottom: currentView === 'timeline' ? '2px solid var(--accent-primary)' : '2px solid transparent',
+                    color: currentView === 'timeline' ? 'var(--text-primary)' : 'var(--text-tertiary)',
+                    background: 'none', border: 'none', padding: '0.5rem 1rem', cursor: 'pointer', fontWeight: 500
+                  }}
+                >
+                  <LineChart size={18} /> Cost Timeline
+                </button>
               </div>
             )}
 
@@ -318,6 +330,7 @@ function App() {
                 {currentView === 'azure' && <AzureAnalyzer />}
                 {currentView === 'nce' && <NceAnalyzer />}
                 {currentView === 'renewals' && <RenewalCalendar />}
+                {currentView === 'timeline' && <CostTimeline />}
               </>
             )}
           </>
