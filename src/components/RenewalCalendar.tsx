@@ -295,15 +295,27 @@ export const RenewalCalendar: React.FC = () => {
             skipEmptyLines: 'greedy',
             encoding: 'UTF-8',
             complete: (results) => {
+                // Surface parse errors as a warning; Papa may still return partial data
+                if (results.errors.length) {
+                    const sample = results.errors
+                        .slice(0, 3)
+                        .map(e => `row ${e.row != null ? e.row + 2 : '?'}: ${e.message}`)
+                        .join('; ');
+                    const suffix = results.errors.length > 3 ? ` … and ${results.errors.length - 3} more` : '';
+                    setEstUploadError(`${results.errors.length} parse issue(s) — some rows may be missing: ${sample}${suffix}`);
+                }
+
                 const rows = results.data as Record<string, string>[];
                 if (!rows.length) {
                     setEstUploadError('No data rows found in the uploaded file.');
+                    if (estFileInputRef.current) estFileInputRef.current.value = '';
                     return;
                 }
                 // Validate that it looks like a PC EST export
                 const first = rows[0];
                 if (!('SubscriptionId' in first) && !('subscriptionId' in first)) {
                     setEstUploadError('Unrecognised file format. Expected a Partner Center EST export with a SubscriptionId column.');
+                    if (estFileInputRef.current) estFileInputRef.current.value = '';
                     return;
                 }
 
@@ -315,7 +327,7 @@ export const RenewalCalendar: React.FC = () => {
                     const evaluationTime = parseESTDate(row['EvaluationTime'] || row['evaluationTime']);
                     const daysUntilEST = termEndDate
                         ? Math.ceil((toMidnight(termEndDate).getTime() - today.getTime()) / 86_400_000)
-                        : 0;
+                        : Number.POSITIVE_INFINITY;
                     const resolvedCustomerName = subscriptionCustomerMap.get(subId.toLowerCase());
                     const record: ESTUploadRecord = {
                         customerTenantId: (row['CustomerTenantId'] || row['customerTenantId'] || '').trim(),
@@ -341,6 +353,7 @@ export const RenewalCalendar: React.FC = () => {
             },
             error: (err: any) => {
                 setEstUploadError(`Parse error: ${err.message}`);
+                if (estFileInputRef.current) estFileInputRef.current.value = '';
             },
         });
     };
@@ -693,7 +706,7 @@ export const RenewalCalendar: React.FC = () => {
                                             {r.termEndDate ? formatDate(r.termEndDate) : '—'}
                                         </div>
                                         <div style={{ fontWeight: 700, color: urgencyColor, whiteSpace: 'nowrap', textAlign: 'right', fontSize: '0.82rem' }}>
-                                            {r.daysUntilEST < 0 ? 'Now' : r.daysUntilEST === 0 ? 'Today' : `${r.daysUntilEST}d`}
+                                            {!isFinite(r.daysUntilEST) ? '—' : r.daysUntilEST < 0 ? 'Now' : r.daysUntilEST === 0 ? 'Today' : `${r.daysUntilEST}d`}
                                         </div>
                                     </div>
                                     {isExpanded && (
@@ -806,7 +819,7 @@ export const RenewalCalendar: React.FC = () => {
                                 <div key={r.subscriptionId} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.83rem', color: 'var(--text-secondary)' }}>
                                     <span><strong style={{ color: 'var(--text-primary)' }}>{displayName}</strong> — {r.subscriptionName}</span>
                                     <span style={{ color: urgencyColor, fontWeight: r.daysUntilEST <= 30 ? 600 : 400 }}>
-                                        {r.termEndDate ? formatDate(r.termEndDate) : '—'} · {r.daysUntilEST < 0 ? 'overdue' : r.daysUntilEST === 0 ? 'today' : `${r.daysUntilEST}d`}
+                                        {r.termEndDate ? formatDate(r.termEndDate) : '—'} · {!isFinite(r.daysUntilEST) ? '—' : r.daysUntilEST < 0 ? 'overdue' : r.daysUntilEST === 0 ? 'today' : `${r.daysUntilEST}d`}
                                     </span>
                                 </div>
                             );
