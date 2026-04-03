@@ -301,33 +301,33 @@ export const RenewalCalendar: React.FC = () => {
                     return;
                 }
 
-                const parsed: ESTUploadRecord[] = rows
-                    .map((row) => {
-                        const subId = (row['SubscriptionId'] || row['subscriptionId'] || '').trim();
-                        if (!subId) return null;
-                        const termEndDate = parseESTDate(row['TermEndDate'] || row['termEndDate']);
-                        const evaluationTime = parseESTDate(row['EvaluationTime'] || row['evaluationTime']);
-                        const daysUntilEST = termEndDate
-                            ? Math.ceil((toMidnight(termEndDate).getTime() - today.getTime()) / 86_400_000)
-                            : 0;
-                        const resolvedCustomerName = subscriptionCustomerMap.get(subId.toLowerCase());
-                        return {
-                            customerTenantId: (row['CustomerTenantId'] || row['customerTenantId'] || '').trim(),
-                            resellerPartnerId: (row['ResellerPartnerId'] || row['resellerPartnerId'] || '').trim(),
-                            subscriptionId: subId,
-                            subscriptionName: (row['SubscriptionName'] || row['subscriptionName'] || '').trim(),
-                            offerId: (row['OfferId'] || row['offerId'] || '').trim(),
-                            quantity: parseInt(row['Quantity'] || row['quantity'] || '0', 10) || 0,
-                            termDuration: (row['TermDuration'] || row['termDuration'] || '').trim(),
-                            billingCycle: (row['BillingCycle'] || row['billingCycle'] || '').trim(),
-                            termEndDate,
-                            errorMessage: (row['ErrorMessage'] || row['errorMessage'] || '').trim(),
-                            evaluationTime,
-                            resolvedCustomerName,
-                            daysUntilEST,
-                        } satisfies ESTUploadRecord;
-                    })
-                    .filter((r): r is ESTUploadRecord => r !== null);
+                const parsed: ESTUploadRecord[] = [];
+                for (const row of rows) {
+                    const subId = (row['SubscriptionId'] || row['subscriptionId'] || '').trim();
+                    if (!subId) continue;
+                    const termEndDate = parseESTDate(row['TermEndDate'] || row['termEndDate']);
+                    const evaluationTime = parseESTDate(row['EvaluationTime'] || row['evaluationTime']);
+                    const daysUntilEST = termEndDate
+                        ? Math.ceil((toMidnight(termEndDate).getTime() - today.getTime()) / 86_400_000)
+                        : 0;
+                    const resolvedCustomerName = subscriptionCustomerMap.get(subId.toLowerCase());
+                    const record: ESTUploadRecord = {
+                        customerTenantId: (row['CustomerTenantId'] || row['customerTenantId'] || '').trim(),
+                        resellerPartnerId: (row['ResellerPartnerId'] || row['resellerPartnerId'] || '').trim(),
+                        subscriptionId: subId,
+                        subscriptionName: (row['SubscriptionName'] || row['subscriptionName'] || '').trim(),
+                        offerId: (row['OfferId'] || row['offerId'] || '').trim(),
+                        quantity: parseInt(row['Quantity'] || row['quantity'] || '0', 10) || 0,
+                        termDuration: (row['TermDuration'] || row['termDuration'] || '').trim(),
+                        billingCycle: (row['BillingCycle'] || row['billingCycle'] || '').trim(),
+                        termEndDate,
+                        errorMessage: (row['ErrorMessage'] || row['errorMessage'] || '').trim(),
+                        evaluationTime,
+                        resolvedCustomerName,
+                        daysUntilEST,
+                    };
+                    parsed.push(record);
+                }
 
                 setEstUploadRecords(parsed);
                 // Reset file input so re-uploading the same file triggers onChange
