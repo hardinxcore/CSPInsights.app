@@ -112,9 +112,15 @@ function formatCurrency(v: number, currency: string): string {
 /** Parse Partner Center EST export date: MM/DD/YYYY HH:MM:SS */
 function parseESTDate(s: string | undefined): Date | null {
     if (!s) return null;
-    const m = s.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    const m = s.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}):(\d{2}))?$/);
     if (!m) return null;
-    return new Date(parseInt(m[3]), parseInt(m[1]) - 1, parseInt(m[2]));
+    const month = parseInt(m[1], 10) - 1;
+    const day = parseInt(m[2], 10);
+    const year = parseInt(m[3], 10);
+    const hours = m[4] ? parseInt(m[4], 10) : 0;
+    const minutes = m[5] ? parseInt(m[5], 10) : 0;
+    const seconds = m[6] ? parseInt(m[6], 10) : 0;
+    return new Date(year, month, day, hours, minutes, seconds);
 }
 
 /** Format a P-duration string to a readable label */
