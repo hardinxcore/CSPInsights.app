@@ -296,28 +296,39 @@ export const RenewalCalendar: React.FC = () => {
             encoding: 'UTF-8',
             complete: (results) => {
                 // Surface parse errors as a warning; Papa may still return partial data
-                if (results.errors.length) {
-                    const sample = results.errors
-                        .slice(0, 3)
-                        .map(e => `row ${e.row != null ? e.row + 2 : '?'}: ${e.message}`)
-                        .join('; ');
-                    const suffix = results.errors.length > 3 ? ` … and ${results.errors.length - 3} more` : '';
-                    setEstUploadError(`${results.errors.length} parse issue(s) — some rows may be missing: ${sample}${suffix}`);
-                }
+                const parseErrors = results.errors;
+                const parseWarning = parseErrors.length
+                    ? `${parseErrors.length} parse issue(s) — some rows may be missing: ${parseErrors
+                          .slice(0, 3)
+                          // +2 adjusts for 1-based row numbers plus the header row
+                          .map(e => `row ${e.row != null ? e.row + 2 : '?'}: ${e.message}`)
+                          .join('; ')}${parseErrors.length > 3 ? ` … and ${parseErrors.length - 3} more` : ''}`
+                    : null;
 
                 const rows = results.data as Record<string, string>[];
                 if (!rows.length) {
-                    setEstUploadError('No data rows found in the uploaded file.');
+                    setEstUploadError(
+                        parseWarning
+                            ? `No data rows found in the uploaded file. ${parseWarning}`
+                            : 'No data rows found in the uploaded file.',
+                    );
                     if (estFileInputRef.current) estFileInputRef.current.value = '';
                     return;
                 }
                 // Validate that it looks like a PC EST export
                 const first = rows[0];
                 if (!('SubscriptionId' in first) && !('subscriptionId' in first)) {
-                    setEstUploadError('Unrecognised file format. Expected a Partner Center EST export with a SubscriptionId column.');
+                    setEstUploadError(
+                        parseWarning
+                            ? `Unrecognised file format. Expected a Partner Center EST export with a SubscriptionId column. ${parseWarning}`
+                            : 'Unrecognised file format. Expected a Partner Center EST export with a SubscriptionId column.',
+                    );
                     if (estFileInputRef.current) estFileInputRef.current.value = '';
                     return;
                 }
+
+                // Set parse warning (if any) before processing records
+                if (parseWarning) setEstUploadError(parseWarning);
 
                 const parsed: ESTUploadRecord[] = [];
                 for (const row of rows) {
