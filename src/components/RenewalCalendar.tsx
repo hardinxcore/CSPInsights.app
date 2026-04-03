@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
+import Papa from 'papaparse';
 import { useBillingStore } from '../store/billingStore';
 import type { BillingRecord } from '../types/BillingData';
-import { Calendar, ChevronLeft, ChevronRight, List, Clock, AlertTriangle, TrendingUp, Download, Hourglass } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, List, Clock, AlertTriangle, TrendingUp, Download, Hourglass, Upload, X } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -29,16 +30,30 @@ interface RenewalEntry {
     currency: string;
     daysUntil: number;
     isCancellable: boolean;
-    isInEST: boolean;
     orderId?: string;
 }
 
-const EST_COLOR = '#6366F1';
+/** A record from the Partner Center AI Assist EST export CSV */
+interface ESTUploadRecord {
+    customerTenantId: string;
+    resellerPartnerId: string;
+    subscriptionId: string;
+    subscriptionName: string;
+    offerId: string;
+    quantity: number;
+    termDuration: string;
+    billingCycle: string;
+    termEndDate: Date | null;
+    errorMessage: string;
+    evaluationTime: Date | null;
+    /** Customer name resolved from billing data via SubscriptionId */
+    resolvedCustomerName?: string;
+    /** Days until this subscription enters EST (termEndDate − today) */
+    daysUntilEST: number;
+}
 
-// EST (Extended Service Terms) applies to annual/multi-year subscriptions that
-// expire on or after the EST launch date. Subscriptions that expired before this
-// date fell under the old post-expiry grace period, not EST.
-const EST_LAUNCH_DATE = new Date('2025-05-04T00:00:00');
+/** Indigo for subscriptions scheduled to enter EST (from PC upload) */
+const EST_FUTURE_COLOR = '#818CF8';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -92,6 +107,23 @@ function formatCurrency(v: number, currency: string): string {
         style: 'currency', currency: currency || 'EUR',
         minimumFractionDigits: 0, maximumFractionDigits: 0,
     });
+}
+
+/** Parse Partner Center EST export date: MM/DD/YYYY HH:MM:SS */
+function parseESTDate(s: string | undefined): Date | null {
+    if (!s) return null;
+    const m = s.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (!m) return null;
+    return new Date(parseInt(m[3]), parseInt(m[1]) - 1, parseInt(m[2]));
+}
+
+/** Format a P-duration string to a readable label */
+function formatDuration(d: string): string {
+    if (!d) return d;
+    if (d.toUpperCase() === 'P1Y') return '1 Year';
+    if (d.toUpperCase() === 'P3Y') return '3 Year';
+    if (d.toUpperCase() === 'P1M') return '1 Month';
+    return d;
 }
 
 function isSameDay(a: Date, b: Date): boolean {
@@ -164,11 +196,6 @@ const RenewalDetailRow: React.FC<{ renewal: RenewalEntry; isExpanded: boolean; o
                             <AlertTriangle size={14} /> NCE 7-day cancellation window active
                         </div>
                     )}
-                    {r.isInEST && (
-                        <div style={{ gridColumn: '1 / -1', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: '6px', padding: '0.4rem 0.65rem', color: EST_COLOR, fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                            <Hourglass size={14} /> Extended Service Term (EST) — subscription continues month-to-month, cancel anytime
-                        </div>
-                    )}
                 </div>
             </div>
         )}
@@ -187,6 +214,9 @@ export const RenewalCalendar: React.FC = () => {
     const [filterDays, setFilterDays] = useState<number>(90);
     const [search, setSearch] = useState('');
     const [expandedRow, setExpandedRow] = useState<string | null>(null);
+    const [estUploadRecords, setEstUploadRecords] = useState<ESTUploadRecord[]>([]);
+    const [estUploadError, setEstUploadError] = useState<string | null>(null);
+    const estFileInputRef = useRef<HTMLInputElement>(null);
 
     const today = useMemo(() => toMidnight(new Date()), []);
 
@@ -217,14 +247,6 @@ export const RenewalCalendar: React.FC = () => {
                 : 999;
 
             const termCategory = classifyTerm(row.TermAndBillingCycle);
-            // EST applies to annual/multi-year subscriptions whose end date is on or after
-            // the EST launch date (2025-05-04) and that are now past their end date.
-            // Subscriptions expired before EST launch fall under the old grace period model.
-            // Monthly (Flex) and Trial are excluded — they auto-renew or expire normally.
-            const isInEST = daysUntil < 0
-                && end >= EST_LAUNCH_DATE
-                && termCategory !== 'Monthly (Flex)'
-                && termCategory !== 'Trial';
 
             entries.push({
                 subscriptionId: row.SubscriptionId,
@@ -239,12 +261,89 @@ export const RenewalCalendar: React.FC = () => {
                 currency: row.Currency ?? row.PricingCurrency ?? 'EUR',
                 daysUntil,
                 isCancellable: daysSinceStart >= -1 && daysSinceStart <= 7,
-                isInEST,
                 orderId: row.OrderId,
             });
         }
         return entries;
     }, [data, today]);
+
+    // ── Subscription ID → customer name lookup from billing data ──────────────
+    const subscriptionCustomerMap = useMemo(() => {
+        const m = new Map<string, string>();
+        for (const row of data) {
+            if (row.SubscriptionId && row.CustomerName) {
+                m.set(row.SubscriptionId.toLowerCase(), row.CustomerName);
+            }
+        }
+        return m;
+    }, [data]);
+
+    // ── Parse Partner Center EST export CSV ───────────────────────────────────
+    const handleESTFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setEstUploadError(null);
+
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: 'greedy',
+            encoding: 'UTF-8',
+            complete: (results) => {
+                const rows = results.data as Record<string, string>[];
+                if (!rows.length) {
+                    setEstUploadError('No data rows found in the uploaded file.');
+                    return;
+                }
+                // Validate that it looks like a PC EST export
+                const first = rows[0];
+                if (!('SubscriptionId' in first) && !('subscriptionId' in first)) {
+                    setEstUploadError('Unrecognised file format. Expected a Partner Center EST export with a SubscriptionId column.');
+                    return;
+                }
+
+                const parsed: ESTUploadRecord[] = rows
+                    .map((row) => {
+                        const subId = (row['SubscriptionId'] || row['subscriptionId'] || '').trim();
+                        if (!subId) return null;
+                        const termEndDate = parseESTDate(row['TermEndDate'] || row['termEndDate']);
+                        const evaluationTime = parseESTDate(row['EvaluationTime'] || row['evaluationTime']);
+                        const daysUntilEST = termEndDate
+                            ? Math.ceil((toMidnight(termEndDate).getTime() - today.getTime()) / 86_400_000)
+                            : 0;
+                        const resolvedCustomerName = subscriptionCustomerMap.get(subId.toLowerCase());
+                        return {
+                            customerTenantId: (row['CustomerTenantId'] || row['customerTenantId'] || '').trim(),
+                            resellerPartnerId: (row['ResellerPartnerId'] || row['resellerPartnerId'] || '').trim(),
+                            subscriptionId: subId,
+                            subscriptionName: (row['SubscriptionName'] || row['subscriptionName'] || '').trim(),
+                            offerId: (row['OfferId'] || row['offerId'] || '').trim(),
+                            quantity: parseInt(row['Quantity'] || row['quantity'] || '0', 10) || 0,
+                            termDuration: (row['TermDuration'] || row['termDuration'] || '').trim(),
+                            billingCycle: (row['BillingCycle'] || row['billingCycle'] || '').trim(),
+                            termEndDate,
+                            errorMessage: (row['ErrorMessage'] || row['errorMessage'] || '').trim(),
+                            evaluationTime,
+                            resolvedCustomerName,
+                            daysUntilEST,
+                        } satisfies ESTUploadRecord;
+                    })
+                    .filter((r): r is ESTUploadRecord => r !== null);
+
+                setEstUploadRecords(parsed);
+                // Reset file input so re-uploading the same file triggers onChange
+                if (estFileInputRef.current) estFileInputRef.current.value = '';
+            },
+            error: (err: any) => {
+                setEstUploadError(`Parse error: ${err.message}`);
+            },
+        });
+    };
+
+    // Sorted by soonest TermEndDate first
+    const estUploadSorted = useMemo(
+        () => [...estUploadRecords].sort((a, b) => (a.daysUntilEST) - (b.daysUntilEST)),
+        [estUploadRecords]
+    );
 
     // ── Apply search + term filter ─────────────────────────────────────────────
     const filteredRenewals = useMemo(() => {
@@ -269,10 +368,9 @@ export const RenewalCalendar: React.FC = () => {
         const thisMonth = filteredRenewals.filter(r => r.daysUntil >= 0 && r.endDate <= monthEnd);
         const next30 = filteredRenewals.filter(r => r.daysUntil >= 0 && r.daysUntil <= 30);
         const cancellable = allRenewals.filter(r => r.isCancellable);
-        const inEST = filteredRenewals.filter(r => r.isInEST);
         const windowValue = upcomingRenewals.reduce((s, r) => s + r.value, 0);
         const currency = filteredRenewals[0]?.currency ?? 'EUR';
-        return { thisMonth, next30, cancellable, inEST, windowValue, currency };
+        return { thisMonth, next30, cancellable, windowValue, currency };
     }, [filteredRenewals, upcomingRenewals, allRenewals, today]);
 
     // ── Calendar grid ──────────────────────────────────────────────────────────
@@ -304,9 +402,7 @@ export const RenewalCalendar: React.FC = () => {
 
     // ── Export ─────────────────────────────────────────────────────────────────
     const handleExport = () => {
-        const exportRows = [...stats.inEST, ...upcomingRenewals];
-        const rows = exportRows.map(r => ({
-            'Status': r.isInEST ? 'Extended Service Term (EST)' : 'Upcoming Renewal',
+        const rows = upcomingRenewals.map(r => ({
             'Customer': r.customerName,
             'Product': r.productName,
             'Term': r.term,
@@ -354,10 +450,10 @@ export const RenewalCalendar: React.FC = () => {
                 <SummaryCard icon={<AlertTriangle size={20} />} color="#FE5000" label="NCE Cancellable Now"
                     value={stats.cancellable.length.toString()} sub="Within 7-day window"
                     alert={stats.cancellable.length > 0} />
-                <SummaryCard icon={<Hourglass size={20} />} color={EST_COLOR} label="In Extended Service Term"
-                    value={stats.inEST.length.toString()}
-                    sub={stats.inEST.length > 0 ? `${formatCurrency(stats.inEST.reduce((s, r) => s + r.value, 0), stats.currency)} · cancel anytime` : 'None active'}
-                    alert={stats.inEST.length > 0} />
+                <SummaryCard icon={<Upload size={20} />} color={EST_FUTURE_COLOR} label="Entering EST (PC Upload)"
+                    value={estUploadRecords.length.toString()}
+                    sub={estUploadRecords.length > 0 ? `${estUploadRecords.filter(r => r.daysUntilEST >= 0 && r.daysUntilEST <= 90).length} within 90 days` : 'Upload PC EST export'}
+                    alert={estUploadRecords.some(r => r.daysUntilEST >= 0 && r.daysUntilEST <= 30)} />
             </div>
 
             {/* Toolbar */}
@@ -412,7 +508,34 @@ export const RenewalCalendar: React.FC = () => {
                 }}>
                     <Download size={14} /> Export
                 </button>
+
+                {/* EST Upload */}
+                <label title="Upload Partner Center AI Assist EST export CSV" style={{
+                    padding: '0.4rem 0.85rem', borderRadius: '8px',
+                    border: `1px solid ${estUploadRecords.length > 0 ? EST_FUTURE_COLOR : 'var(--border-color)'}`,
+                    background: estUploadRecords.length > 0 ? `${EST_FUTURE_COLOR}18` : 'var(--bg-secondary)',
+                    color: estUploadRecords.length > 0 ? EST_FUTURE_COLOR : 'var(--text-primary)',
+                    fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem',
+                }}>
+                    <Upload size={14} />
+                    {estUploadRecords.length > 0 ? `EST: ${estUploadRecords.length} subs` : 'Upload EST'}
+                    <input ref={estFileInputRef} type="file" accept=".csv" onChange={handleESTFileUpload} style={{ display: 'none' }} />
+                </label>
+                {estUploadRecords.length > 0 && (
+                    <button onClick={() => { setEstUploadRecords([]); setEstUploadError(null); }} title="Clear uploaded EST data" style={{
+                        padding: '0.4rem', borderRadius: '8px', border: '1px solid var(--border-color)',
+                        background: 'var(--bg-secondary)', color: 'var(--text-tertiary)', fontSize: '0.85rem',
+                        cursor: 'pointer', display: 'flex', alignItems: 'center',
+                    }}>
+                        <X size={14} />
+                    </button>
+                )}
             </div>
+            {estUploadError && (
+                <div style={{ marginBottom: '1rem', padding: '0.6rem 0.9rem', background: 'rgba(254,80,0,0.08)', border: '1px solid rgba(254,80,0,0.3)', borderRadius: '8px', color: '#FE5000', fontSize: '0.83rem' }}>
+                    {estUploadError}
+                </div>
+            )}
 
             {/* Term legend */}
             <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
@@ -468,7 +591,6 @@ export const RenewalCalendar: React.FC = () => {
                                 );
                                 const k = dayKey(day);
                                 const dayRenewals = renewalsByDay.get(k) ?? [];
-                                const estCount = dayRenewals.filter(r => r.isInEST).length;
                                 const isToday = isSameDay(day, today);
                                 const isSelected = selectedDay ? isSameDay(day, selectedDay) : false;
                                 const isPast = day < today && !isToday;
@@ -478,16 +600,15 @@ export const RenewalCalendar: React.FC = () => {
                                         style={{
                                             minHeight: '80px', padding: '0.4rem',
                                             borderRight: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)',
-                                            background: isSelected ? 'rgba(99,102,241,0.1)' : isToday ? 'rgba(16,185,129,0.06)' : estCount > 0 && isPast ? 'rgba(99,102,241,0.04)' : 'transparent',
-                                            borderLeft: estCount > 0 && isPast ? `3px solid ${EST_COLOR}55` : undefined,
+                                            background: isSelected ? 'rgba(99,102,241,0.1)' : isToday ? 'rgba(16,185,129,0.06)' : 'transparent',
                                             cursor: hasItems ? 'pointer' : 'default',
-                                            opacity: isPast && !estCount ? 0.45 : 1,
+                                            opacity: isPast ? 0.45 : 1,
                                             transition: 'background 0.12s',
                                         }}>
                                         <div style={{
                                             width: 22, height: 22, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
                                             fontSize: '0.8rem', fontWeight: isToday ? 700 : 400,
-                                            color: isToday ? '#10B981' : isSelected ? EST_COLOR : 'var(--text-secondary)',
+                                            color: isToday ? '#10B981' : isSelected ? 'var(--accent-primary)' : 'var(--text-secondary)',
                                             background: isToday ? 'rgba(16,185,129,0.15)' : 'transparent',
                                             marginBottom: '0.3rem',
                                         }}>
@@ -501,11 +622,6 @@ export const RenewalCalendar: React.FC = () => {
                                                 <span style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', lineHeight: '8px' }}>+{dayRenewals.length - 6}</span>
                                             )}
                                         </div>
-                                        {estCount > 0 && (
-                                            <div style={{ marginTop: '2px', fontSize: '0.6rem', fontWeight: 700, color: EST_COLOR, letterSpacing: '0.03em' }}>
-                                                EST{estCount > 1 ? ` ×${estCount}` : ''}
-                                            </div>
-                                        )}
                                     </div>
                                 );
                             })}
@@ -541,47 +657,53 @@ export const RenewalCalendar: React.FC = () => {
             {viewMode === 'list' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
-                {/* EST section */}
-                {stats.inEST.length > 0 && (
-                    <div style={{ background: 'var(--bg-secondary)', borderRadius: '12px', border: `1px solid ${EST_COLOR}44`, overflow: 'hidden' }}>
-                        <div style={{ padding: '0.55rem 0.75rem', background: `${EST_COLOR}11`, borderBottom: '1px solid var(--border-color)', fontSize: '0.78rem', fontWeight: 700, color: EST_COLOR, letterSpacing: '0.06em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <Hourglass size={13} /> Extended Service Term — {stats.inEST.length} subscription{stats.inEST.length > 1 ? 's' : ''} · cancel anytime
+                {/* Partner Center EST upload section */}
+                {estUploadSorted.length > 0 && (
+                    <div style={{ background: 'var(--bg-secondary)', borderRadius: '12px', border: `1px solid ${EST_FUTURE_COLOR}44`, overflow: 'hidden' }}>
+                        <div style={{ padding: '0.55rem 0.75rem', background: `${EST_FUTURE_COLOR}11`, borderBottom: '1px solid var(--border-color)', fontSize: '0.78rem', fontWeight: 700, color: EST_FUTURE_COLOR, letterSpacing: '0.06em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Upload size={13} /> Entering EST — {estUploadSorted.length} subscription{estUploadSorted.length > 1 ? 's' : ''} (Partner Center AI Assist)
                         </div>
-                        {stats.inEST.sort((a, b) => a.daysUntil - b.daysUntil).map((r, i) => {
-                            const isExpanded = expandedRow === r.subscriptionId;
+                        {estUploadSorted.map((r, i) => {
+                            const key = r.subscriptionId;
+                            const isExpanded = expandedRow === `est-pc-${key}`;
+                            const displayName = r.resolvedCustomerName || r.customerTenantId;
+                            const urgencyColor = r.daysUntilEST <= 30 ? '#FE5000' : r.daysUntilEST <= 90 ? '#F59E0B' : 'var(--text-secondary)';
                             return (
-                                <React.Fragment key={r.subscriptionId}>
-                                    <div onClick={() => setExpandedRow(isExpanded ? null : r.subscriptionId)}
-                                        style={{
-                                            display: 'grid', gridTemplateColumns: '1fr 1fr auto auto auto auto',
-                                            gap: '0.5rem', alignItems: 'center',
-                                            padding: '0.6rem 0.75rem', cursor: 'pointer',
-                                            borderBottom: '1px solid var(--border-color)',
-                                            background: i % 2 === 0 ? 'transparent' : 'var(--bg-tertiary)',
-                                            fontSize: '0.85rem',
-                                        }}>
-                                        <div style={{ color: 'var(--text-primary)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.customerName}</div>
-                                        <div style={{ color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.productName}</div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', whiteSpace: 'nowrap' }}>
-                                            <TermDot category={r.termCategory} />
-                                            <span style={{ color: 'var(--text-tertiary)', fontSize: '0.78rem' }}>{r.termCategory}</span>
+                                <React.Fragment key={key}>
+                                    <div onClick={() => setExpandedRow(isExpanded ? null : `est-pc-${key}`)} style={{
+                                        display: 'grid', gridTemplateColumns: '1fr 1fr auto auto auto',
+                                        gap: '0.5rem', alignItems: 'center',
+                                        padding: '0.6rem 0.75rem', cursor: 'pointer',
+                                        borderBottom: '1px solid var(--border-color)',
+                                        background: i % 2 === 0 ? 'transparent' : 'var(--bg-tertiary)',
+                                        fontSize: '0.85rem',
+                                    }}>
+                                        <div style={{ color: 'var(--text-primary)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</div>
+                                        <div style={{ color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.subscriptionName}</div>
+                                        <div style={{ color: 'var(--text-tertiary)', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
+                                            {formatDuration(r.termDuration)} · {r.billingCycle}
                                         </div>
-                                        <div style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{formatDate(r.endDate)}</div>
-                                        <div style={{ fontWeight: 700, color: EST_COLOR, whiteSpace: 'nowrap', textAlign: 'right', fontSize: '0.75rem' }}>EST</div>
-                                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', textAlign: 'right' }}>{formatCurrency(r.value, r.currency)}</div>
+                                        <div style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                                            {r.termEndDate ? formatDate(r.termEndDate) : '—'}
+                                        </div>
+                                        <div style={{ fontWeight: 700, color: urgencyColor, whiteSpace: 'nowrap', textAlign: 'right', fontSize: '0.82rem' }}>
+                                            {r.daysUntilEST < 0 ? 'Now' : r.daysUntilEST === 0 ? 'Today' : `${r.daysUntilEST}d`}
+                                        </div>
                                     </div>
                                     {isExpanded && (
-                                        <div style={{ padding: '0.75rem 1rem', background: `${EST_COLOR}08`, borderBottom: '1px solid var(--border-color)', fontSize: '0.8rem' }}>
+                                        <div style={{ padding: '0.75rem 1rem', background: `${EST_FUTURE_COLOR}08`, borderBottom: '1px solid var(--border-color)', fontSize: '0.8rem' }}>
                                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.5rem', color: 'var(--text-secondary)' }}>
                                                 <div><span style={{ color: 'var(--text-tertiary)' }}>Subscription ID</span><br /><code style={{ fontSize: '0.75rem' }}>{r.subscriptionId}</code></div>
-                                                {r.startDate && <div><span style={{ color: 'var(--text-tertiary)' }}>Start Date</span><br />{formatDate(r.startDate)}</div>}
-                                                <div><span style={{ color: 'var(--text-tertiary)' }}>Original End Date</span><br />{formatDate(r.endDate)}</div>
-                                                <div><span style={{ color: 'var(--text-tertiary)' }}>Overdue by</span><br />{Math.abs(r.daysUntil)} days</div>
+                                                <div><span style={{ color: 'var(--text-tertiary)' }}>Customer Tenant ID</span><br /><code style={{ fontSize: '0.75rem' }}>{r.customerTenantId}</code></div>
+                                                {r.resolvedCustomerName && <div><span style={{ color: 'var(--text-tertiary)' }}>Customer Name</span><br />{r.resolvedCustomerName}</div>}
+                                                <div><span style={{ color: 'var(--text-tertiary)' }}>Offer ID</span><br /><code style={{ fontSize: '0.75rem' }}>{r.offerId}</code></div>
                                                 <div><span style={{ color: 'var(--text-tertiary)' }}>Quantity</span><br />{r.quantity}</div>
-                                                {r.orderId && <div><span style={{ color: 'var(--text-tertiary)' }}>Order ID</span><br /><code style={{ fontSize: '0.75rem' }}>{r.orderId}</code></div>}
-                                                <div><span style={{ color: 'var(--text-tertiary)' }}>Full Term</span><br />{r.term}</div>
-                                                <div style={{ gridColumn: '1 / -1', background: `${EST_COLOR}11`, border: `1px solid ${EST_COLOR}44`, borderRadius: '6px', padding: '0.4rem 0.65rem', color: EST_COLOR, fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                                    <Hourglass size={14} /> Extended Service Term active — subscription continues month-to-month until renewed or cancelled
+                                                <div><span style={{ color: 'var(--text-tertiary)' }}>Term / Billing Cycle</span><br />{formatDuration(r.termDuration)} / {r.billingCycle}</div>
+                                                <div><span style={{ color: 'var(--text-tertiary)' }}>Term End Date</span><br />{r.termEndDate ? formatDate(r.termEndDate) : '—'}</div>
+                                                {r.resellerPartnerId && <div><span style={{ color: 'var(--text-tertiary)' }}>Reseller Partner ID</span><br /><code style={{ fontSize: '0.75rem' }}>{r.resellerPartnerId}</code></div>}
+                                                {r.errorMessage && <div style={{ gridColumn: '1 / -1', color: '#FE5000', fontSize: '0.78rem' }}><AlertTriangle size={12} style={{ verticalAlign: 'middle', marginRight: '4px' }} />{r.errorMessage}</div>}
+                                                <div style={{ gridColumn: '1 / -1', background: `${EST_FUTURE_COLOR}11`, border: `1px solid ${EST_FUTURE_COLOR}44`, borderRadius: '6px', padding: '0.4rem 0.65rem', color: EST_FUTURE_COLOR, fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                    <Hourglass size={14} /> This subscription is configured to enter Extended Service Term when its annual term expires
                                                 </div>
                                             </div>
                                         </div>
@@ -663,20 +785,26 @@ export const RenewalCalendar: React.FC = () => {
                 </div>
             )}
 
-            {/* EST alert panel */}
-            {stats.inEST.length > 0 && viewMode === 'calendar' && (
-                <div style={{ marginTop: '1.5rem', background: `${EST_COLOR}08`, border: `1px solid ${EST_COLOR}33`, borderRadius: '12px', padding: '1rem' }}>
-                    <div style={{ fontWeight: 600, fontSize: '0.9rem', color: EST_COLOR, display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                        <Hourglass size={16} />
-                        {stats.inEST.length} subscription{stats.inEST.length > 1 ? 's' : ''} in Extended Service Term — past end date, running month-to-month
+            {/* Partner Center EST panel — calendar view */}
+            {estUploadSorted.length > 0 && viewMode === 'calendar' && (
+                <div style={{ marginTop: '1.5rem', background: `${EST_FUTURE_COLOR}08`, border: `1px solid ${EST_FUTURE_COLOR}33`, borderRadius: '12px', padding: '1rem' }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.9rem', color: EST_FUTURE_COLOR, display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                        <Upload size={16} />
+                        {estUploadSorted.length} subscription{estUploadSorted.length > 1 ? 's' : ''} entering EST — scheduled at term end (Partner Center AI Assist)
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                        {stats.inEST.map(r => (
-                            <div key={r.subscriptionId} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.83rem', color: 'var(--text-secondary)' }}>
-                                <span><strong style={{ color: 'var(--text-primary)' }}>{r.customerName}</strong> — {r.productName}</span>
-                                <span style={{ color: 'var(--text-tertiary)' }}>expired {formatDate(r.endDate)} · {Math.abs(r.daysUntil)}d ago</span>
-                            </div>
-                        ))}
+                        {estUploadSorted.map(r => {
+                            const displayName = r.resolvedCustomerName || r.customerTenantId;
+                            const urgencyColor = r.daysUntilEST <= 30 ? '#FE5000' : r.daysUntilEST <= 90 ? '#F59E0B' : 'var(--text-secondary)';
+                            return (
+                                <div key={r.subscriptionId} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.83rem', color: 'var(--text-secondary)' }}>
+                                    <span><strong style={{ color: 'var(--text-primary)' }}>{displayName}</strong> — {r.subscriptionName}</span>
+                                    <span style={{ color: urgencyColor, fontWeight: r.daysUntilEST <= 30 ? 600 : 400 }}>
+                                        {r.termEndDate ? formatDate(r.termEndDate) : '—'} · {r.daysUntilEST < 0 ? 'overdue' : r.daysUntilEST === 0 ? 'today' : `${r.daysUntilEST}d`}
+                                    </span>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             )}
