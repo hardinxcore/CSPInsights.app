@@ -72,6 +72,9 @@ const TERM_LABELS: TermCategory[] = [
 
 const DAY_HEADERS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
+/** Offset to convert PapaParse's 0-based row index to a 1-based spreadsheet row number (accounting for the header row) */
+const CSV_ROW_NUMBER_OFFSET = 2;
+
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 function classifyTerm(raw: string): TermCategory {
@@ -301,7 +304,7 @@ export const RenewalCalendar: React.FC = () => {
                     ? `${parseErrors.length} parse issue(s) — some rows may be missing: ${parseErrors
                           .slice(0, 3)
                           // +2 adjusts for 1-based row numbers plus the header row
-                          .map(e => `row ${e.row != null ? e.row + 2 : '?'}: ${e.message}`)
+                          .map(e => `row ${e.row != null ? e.row + CSV_ROW_NUMBER_OFFSET : '?'}: ${e.message}`)
                           .join('; ')}${parseErrors.length > 3 ? ` … and ${parseErrors.length - 3} more` : ''}`
                     : null;
 
