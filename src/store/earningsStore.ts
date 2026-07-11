@@ -4,13 +4,14 @@ import {
     saveEarningsData, loadEarningsData, clearEarningsData,
     savePaymentsData, loadPaymentsData, clearPaymentsData,
 } from '../utils/earningsDb';
+import { currencyLabel, currencyTotals, uniqueByKey } from '../utils/aggregation';
 
 const DEFAULT_EARNINGS_META: EarningsMeta = {
-    totalRows: 0, customersCount: 0, totalEarningAmount: 0, currency: 'EUR',
+    totalRows: 0, customersCount: 0, totalEarningAmount: 0, currency: 'EUR', totalsByCurrency: {},
 };
 
 const DEFAULT_PAYMENTS_META: PaymentsMeta = {
-    totalRows: 0, totalEarned: 0, totalPaid: 0, totalTax: 0, currency: 'EUR',
+    totalRows: 0, totalEarned: 0, totalPaid: 0, totalTax: 0, currency: 'EUR', totalsByCurrency: {},
 };
 
 interface EarningsState {
@@ -51,13 +52,13 @@ export const useEarningsStore = create<EarningsState>((set) => ({
         set({ data, meta, error: null });
     },
 
-    appendData: (newData, _newMeta) => {
+    appendData: (newData) => {
         set((state) => {
-            const combined = [...state.data, ...newData];
-            const currency = combined[0]?.transactionCurrency || 'EUR';
+            const combined = uniqueByKey([...state.data, ...newData], row => row.earningId || [row.transactionId, row.customerId, row.productId, row.earningDate, row.earningAmount].join('|'));
             const totalEarningAmount = combined.reduce((sum, r) => sum + (r.earningAmount || 0), 0);
             const customersCount = new Set(combined.map(r => r.customerName).filter(Boolean)).size;
-            const meta: EarningsMeta = { totalRows: combined.length, customersCount, totalEarningAmount, currency };
+            const totalsByCurrency = currencyTotals(combined, row => row.transactionCurrency, row => row.earningAmount);
+            const meta: EarningsMeta = { totalRows: combined.length, customersCount, totalEarningAmount, currency: currencyLabel(totalsByCurrency), totalsByCurrency };
             saveEarningsData(combined, meta).catch(console.error);
             return { data: combined, meta };
         });
@@ -73,14 +74,19 @@ export const useEarningsStore = create<EarningsState>((set) => ({
         set({ payments: data, paymentsMeta: meta, error: null });
     },
 
-    appendPayments: (newData, _newMeta) => {
+    appendPayments: (newData) => {
         set((state) => {
-            const combined = [...state.payments, ...newData];
-            const currency = combined[0]?.earnedCurrencyCode || 'EUR';
+            const combined = uniqueByKey([...state.payments, ...newData], row => row.paymentId || [row.paymentDate, row.programName, row.earned, row.totalPayment].join('|'));
             const totalEarned = combined.reduce((s, r) => s + r.earned, 0);
             const totalPaid = combined.reduce((s, r) => s + r.totalPayment, 0);
-            const totalTax = combined.reduce((s, r) => s + r.salesTax + r.withheldTax, 0);
-            const meta: PaymentsMeta = { totalRows: combined.length, totalEarned, totalPaid, totalTax, currency };
+            const totalTax = combined.reduce((s, r) => s + r.salesTax + r.withheldTax + r.serviceFeeTax, 0);
+            const totalsByCurrency = combined.reduce<Record<string, { earned: number; paid: number; tax: number }>>((totals, row) => {
+                const currency = row.earnedCurrencyCode || 'UNKNOWN';
+                const current = totals[currency] || { earned: 0, paid: 0, tax: 0 };
+                totals[currency] = { earned: current.earned + row.earned, paid: current.paid + row.totalPayment, tax: current.tax + row.salesTax + row.withheldTax + row.serviceFeeTax };
+                return totals;
+            }, {});
+            const meta: PaymentsMeta = { totalRows: combined.length, totalEarned, totalPaid, totalTax, currency: currencyLabel(Object.fromEntries(Object.keys(totalsByCurrency).map(key => [key, 0]))), totalsByCurrency };
             savePaymentsData(combined, meta).catch(console.error);
             return { payments: combined, paymentsMeta: meta };
         });

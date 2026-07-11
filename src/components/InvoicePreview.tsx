@@ -33,6 +33,14 @@ export const InvoicePreview: React.FC<InvoicePreviewProps> = ({
 }) => {
     const { companyDetails } = useSettingsStore();
 
+    // Deterministic draft number avoids changing invoice identifiers on rerender.
+    const draftNumber = React.useMemo(() => {
+        const source = `${customerId}-${customerName}`;
+        let hash = 0;
+        for (const character of source) hash = ((hash << 5) - hash + character.charCodeAt(0)) | 0;
+        return Math.abs(hash) % 10000;
+    }, [customerId, customerName]);
+
     const handlePrint = () => {
         window.print();
     };
@@ -106,7 +114,7 @@ export const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                                     </tr>
                                     <tr>
                                         <td>Invoice #:</td>
-                                        <td>DRAFT-{Math.floor(Math.random() * 10000)}</td>
+                                        <td>DRAFT-{draftNumber}</td>
                                     </tr>
                                 </tbody>
                             </table>

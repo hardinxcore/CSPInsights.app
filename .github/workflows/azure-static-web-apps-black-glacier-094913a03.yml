@@ -27,6 +27,16 @@ jobs:
         run: npm ci
       - name: Build
         run: npm run build
+      - name: Lint
+        run: npm run lint
+      - name: Test
+        run: npm test
+      - name: Security audit
+        run: npm audit --audit-level=high
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: Browser smoke tests
+        run: npm run e2e
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1

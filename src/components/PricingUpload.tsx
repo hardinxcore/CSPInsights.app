@@ -8,14 +8,14 @@ export const PricingUpload: React.FC = () => {
 
     React.useEffect(() => {
         loadSnapshots();
-    }, []);
+    }, [loadSnapshots]);
 
     const handleFileSelect = async (files: File[]) => {
         if (files.length > 0) {
             try {
                 // Pricing store currently only handles one file at a time
                 await importPricing(files[0]);
-            } catch (e) {
+            } catch {
                 // Error handled in store
             }
         }

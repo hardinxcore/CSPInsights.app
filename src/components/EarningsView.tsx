@@ -9,8 +9,8 @@ import {
     CreditCard, Banknote, Receipt
 } from 'lucide-react';
 import { useEarningsStore } from '../store/earningsStore';
-import { parseEarningsCSVs } from '../utils/earningsParser';
-import { parsePaymentsCSV } from '../utils/paymentsParser';
+import { cancelEarningsParse, parseEarningsCSVs } from '../utils/earningsParser';
+import { cancelPaymentsParse, parsePaymentsCSV } from '../utils/paymentsParser';
 import { FileDropZone } from './FileDropZone';
 import * as XLSX from 'xlsx';
 import type { EarningRecord, PaymentRecord } from '../types/EarningsData';
@@ -378,7 +378,7 @@ export const EarningsView: React.FC = () => {
     const [isParsingPayments, setIsParsingPayments] = useState(false);
 
     const showDashboard = data.length > 0 && !isUploading;
-    const currency = data[0]?.transactionCurrency || meta.currency || 'EUR';
+    const currency = meta.currency === 'MIXED' ? 'EUR' : (meta.currency || data[0]?.transactionCurrency || 'EUR');
 
     // ── Derived aggregations ───────────────────────────────────────────────────
 
@@ -624,7 +624,7 @@ export const EarningsView: React.FC = () => {
 
     // ── Payments derived data ──────────────────────────────────────────────────
 
-    const paymentsCurrency = payments[0]?.earnedCurrencyCode || paymentsMeta.currency || 'EUR';
+    const paymentsCurrency = paymentsMeta.currency === 'MIXED' ? 'EUR' : (paymentsMeta.currency || payments[0]?.earnedCurrencyCode || 'EUR');
 
     const formatPaymentMethod = (method: string) => {
         if (!method) return '—';
@@ -693,9 +693,10 @@ export const EarningsView: React.FC = () => {
                     &larr; Cancel &amp; Back to Dashboard
                 </button>
             )}
-            <FileDropZone
+                    <FileDropZone
                 onFileSelect={handleFileSelect}
-                isLoading={isParsing}
+                        isLoading={isParsing}
+                        onCancel={cancelEarningsParse}
                 accept=".csv"
                 title="Upload Earnings Report"
                 description="Drop your Earnings Report (Default) CSV here"
@@ -781,7 +782,7 @@ export const EarningsView: React.FC = () => {
             {/* Summary Cards */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
                 {[
-                    { icon: <TrendingUp size={18} color="#10B981" />, label: 'Total Earnings', value: fmtShort(meta.totalEarningAmount, currency), sub: currency, color: '#10B981' },
+                    { icon: <TrendingUp size={18} color="#10B981" />, label: 'Total Earnings', value: meta.currency === 'MIXED' ? 'Multiple currencies' : fmtShort(meta.totalEarningAmount, currency), sub: meta.currency, color: '#10B981' },
                     { icon: <Clock size={18} color="#F59E0B" />, label: 'Unprocessed', value: fmtShort(unprocessedAmount, currency), sub: 'pending payment', color: '#F59E0B' },
                     { icon: <Users size={18} color="var(--brand-turquoise)" />, label: 'Customers', value: String(meta.customersCount), sub: 'with earnings', color: 'var(--text-primary)' },
                     { icon: <FileText size={18} color="var(--brand-orange)" />, label: 'Records', value: meta.totalRows.toLocaleString('nl-NL'), sub: `${uniqueLevers.length} levers`, color: 'var(--text-primary)' },
@@ -1034,6 +1035,7 @@ export const EarningsView: React.FC = () => {
                             <FileDropZone
                                 onFileSelect={handlePaymentsFileSelect}
                                 isLoading={isParsingPayments}
+                                onCancel={cancelPaymentsParse}
                                 accept=".csv"
                                 title="Upload Payments Report"
                                 description="Drop your Payments CSV here"
@@ -1083,7 +1085,7 @@ export const EarningsView: React.FC = () => {
                                 {[
                                     { icon: <TrendingUp size={18} color="#10B981" />, label: 'Total Earned', value: fmtShort(paymentsMeta.totalEarned, paymentsCurrency), sub: paymentsCurrency, color: '#10B981' },
                                     { icon: <Banknote size={18} color="var(--brand-turquoise)" />, label: 'Total Paid Out', value: fmtShort(paymentsMeta.totalPaid, paymentsCurrency), sub: 'incl. tax', color: 'var(--brand-turquoise)' },
-                                    { icon: <Receipt size={18} color="#F59E0B" />, label: 'Total Tax', value: fmtShort(paymentsMeta.totalTax, paymentsCurrency), sub: 'sales + withheld', color: '#F59E0B' },
+                                    { icon: <Receipt size={18} color="#F59E0B" />, label: 'Total Tax', value: paymentsMeta.currency === 'MIXED' ? 'Multiple currencies' : fmtShort(paymentsMeta.totalTax, paymentsCurrency), sub: 'sales + withheld + service fee', color: '#F59E0B' },
                                     { icon: <CreditCard size={18} color="var(--brand-orange)" />, label: 'Payments', value: String(paymentsMeta.totalRows), sub: `${paymentsByMethod.length} method(s)`, color: 'var(--text-primary)' },
                                 ].map(card => (
                                     <div key={card.label} className="glass-panel" style={{ padding: '1.25rem', border: '1px solid var(--border-color)' }}>

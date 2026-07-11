@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef } from 'react';
+import React, { lazy, Suspense, useMemo, useState, useRef } from 'react';
 import type { ParseResult, BillingRecord } from '../types/BillingData';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { ArrowUpDown, ArrowUp, ArrowDown, Download, Layers, Table as TableIcon, Settings, Printer, Percent, Check, Tag, Trash2 } from 'lucide-react';
@@ -9,7 +9,7 @@ import { MarginManager } from './MarginManager';
 import { ComparisonView } from './ComparisonView';
 import { InvoicePreview } from './InvoicePreview';
 import { CustomerDetail } from './CustomerDetail';
-import { AzureAnalyzer } from './AzureAnalyzer';
+const AzureAnalyzer = lazy(() => import('./AzureAnalyzer').then(m => ({ default: m.AzureAnalyzer })));
 
 import { useBillingStore } from '../store/billingStore';
 
@@ -162,7 +162,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, onReset, onClearData
                         if (!isNaN(d.getTime())) {
                             dates[r.InvoiceNumber] = d.toLocaleDateString('nl-NL', { month: 'short', year: 'numeric' });
                         }
-                    } catch (e) { }
+                    } catch { /* Ignore invalid display dates. */ }
                 }
             }
             else hasUnbilled = true;
@@ -189,7 +189,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, onReset, onClearData
         if (uniqueInvoices.length > 0) {
             setActiveInvoices(new Set(uniqueInvoices));
         }
-    }, [uniqueInvoicesKey]);
+    }, [uniqueInvoices, uniqueInvoicesKey]);
 
 
     // 3. Filter
@@ -256,7 +256,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, onReset, onClearData
 
         return result;
         return result;
-    }, [rows, filters, searchQuery, showAnomaliesOnly, activeInvoices, selectedTags, customerTags]);
+    }, [rows, filters, searchQuery, showAnomaliesOnly, activeInvoices, selectedTags, customerTags, uniqueInvoices.length]);
 
     // 3. Stats & Sell Prices
     const { filteredTotal, filteredSellPrice, filteredCustomers, auditStats } = useMemo(() => {
@@ -318,7 +318,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, onReset, onClearData
             if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
             return 0;
         });
-    }, [filteredRows, sortConfig]);
+    }, [filteredRows, sortConfig, globalMargin, marginRules]);
 
     // 5. Dynamic Column Sizing
     const columnWidths = useMemo(() => {
@@ -642,7 +642,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, onReset, onClearData
                     onBack={() => setSelectedCustomer(null)}
                 />
             ) : viewMode === 'azure' ? (
-                <AzureAnalyzer />
+                <Suspense fallback={<div className="flex-center" style={{ minHeight: '300px' }}>Loading Azure analysis…</div>}><AzureAnalyzer /></Suspense>
             ) : viewMode === 'comparison' ? (
                 <ComparisonView currentData={filteredRows} />
 

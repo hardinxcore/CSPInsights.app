@@ -61,9 +61,13 @@ Managing Microsoft CSP operations means wrestling with massive reconciliation CS
 
 ### Privacy & Security
 - **100% client-side** — all processing happens in your browser
-- **IndexedDB storage** — data persists locally between sessions
+- **IndexedDB storage** — billing, pricing, earnings, settings, and cart data persist locally between sessions
 - **No telemetry** — no analytics, no tracking, no data collection
+- **Unencrypted local data** — anyone with access to the same browser profile may be able to inspect the data
+- **Encrypted backups available** — use the password-protected backup option for transfers; keep the password separate from the backup file
 - Clearing your browser data removes everything
+
+The app intentionally has no server-side account or synchronisation. This improves data locality, but it also means there is no multi-user access control, server-side recovery, or central audit trail.
 
 ## Data Sources
 
@@ -91,7 +95,18 @@ npm install
 npm run dev
 ```
 
-Requires Node.js 18+ and npm.
+Requires Node.js 20+ and npm (Vite 7 is used by the current toolchain).
+
+### Quality checks
+
+```bash
+npm run lint
+npm test
+npm run build
+npm run e2e
+```
+
+The browser smoke tests use Playwright and start the production preview server automatically.
 
 ## Tech Stack
 

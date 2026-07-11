@@ -21,7 +21,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
     useEffect(() => {
         loadBillingSnapshots();
         loadPricingSnapshots();
-    }, []);
+    }, [loadBillingSnapshots, loadPricingSnapshots]);
 
     // Combine and sort snapshots
     const recentActivity = [
@@ -108,7 +108,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                             <div>
                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>Revenue</div>
                                 <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                                    {new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(billingMeta.totalAmount)}
+                                    {billingMeta.currency === 'MIXED' ? 'Multiple currencies' : new Intl.NumberFormat('nl-NL', { style: 'currency', currency: billingMeta.currency || 'EUR', maximumFractionDigits: 0 }).format(billingMeta.totalAmount)}
                                 </div>
                             </div>
                             <div>
@@ -209,7 +209,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                             <div>
                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>Earnings</div>
                                 <div style={{ fontWeight: 600, color: '#10B981' }}>
-                                    {new Intl.NumberFormat('nl-NL', { style: 'currency', currency: earningsMeta.currency || 'EUR', maximumFractionDigits: 0 }).format(earningsMeta.totalEarningAmount)}
+                                    {earningsMeta.currency === 'MIXED' ? 'Multiple currencies' : new Intl.NumberFormat('nl-NL', { style: 'currency', currency: earningsMeta.currency || 'EUR', maximumFractionDigits: 0 }).format(earningsMeta.totalEarningAmount)}
                                 </div>
                             </div>
                             <div>

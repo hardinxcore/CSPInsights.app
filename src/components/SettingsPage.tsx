@@ -10,10 +10,11 @@ export const SettingsPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const [formState, setFormState] = useState(companyDetails);
     const [marginState, setMarginState] = useState(defaultMargin);
     const [saved, setSaved] = useState(false);
+    const [backupPassword, setBackupPassword] = useState('');
 
     useEffect(() => {
         loadSettings();
-    }, []);
+    }, [loadSettings]);
 
     useEffect(() => {
         setFormState(companyDetails);
@@ -50,9 +51,9 @@ export const SettingsPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     </h3>
                     <div style={{ display: 'grid', gap: '1rem' }}>
                         <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Company Name</label>
+                            <label htmlFor="company-name" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Company Name</label>
                             <input
-                                type="text"
+                                id="company-name" type="text"
                                 className="filter-input"
                                 value={formState.name}
                                 onChange={e => setFormState({ ...formState, name: e.target.value })}
@@ -61,9 +62,9 @@ export const SettingsPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                             <div>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Address Line 1</label>
+                                <label htmlFor="address-line-1" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Address Line 1</label>
                                 <input
-                                    type="text"
+                                    id="address-line-1" type="text"
                                     className="filter-input"
                                     value={formState.addressLine1}
                                     onChange={e => setFormState({ ...formState, addressLine1: e.target.value })}
@@ -71,9 +72,9 @@ export const SettingsPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                 />
                             </div>
                             <div>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Address Line 2 (City/Zip)</label>
+                                <label htmlFor="address-line-2" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Address Line 2 (City/Zip)</label>
                                 <input
-                                    type="text"
+                                    id="address-line-2" type="text"
                                     className="filter-input"
                                     value={formState.addressLine2}
                                     onChange={e => setFormState({ ...formState, addressLine2: e.target.value })}
@@ -90,9 +91,9 @@ export const SettingsPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     </h3>
                     <div style={{ display: 'grid', gap: '1rem' }}>
                         <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>IBAN</label>
+                            <label htmlFor="iban" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>IBAN</label>
                             <input
-                                type="text"
+                                id="iban" type="text"
                                 className="filter-input"
                                 value={formState.iban}
                                 onChange={e => setFormState({ ...formState, iban: e.target.value })}
@@ -111,6 +112,11 @@ export const SettingsPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                     onChange={e => {
                                         const file = e.target.files?.[0];
                                         if (file) {
+                                            if (!file.type.startsWith('image/') || file.size > 500 * 1024) {
+                                                alert('Please select an image smaller than 500 KB.');
+                                                e.target.value = '';
+                                                return;
+                                            }
                                             const reader = new FileReader();
                                             reader.onloadend = () => {
                                                 setFormState({ ...formState, logoUrl: reader.result as string });
@@ -152,10 +158,10 @@ export const SettingsPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     <h3 className="flex-center" style={{ gap: '0.5rem', marginBottom: '1rem', color: 'var(--brand-turquoise)' }}>
                         <Percent size={20} /> Defaults
                     </h3>
-                    <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Default Global Margin (%)</label>
+                        <div>
+                            <label htmlFor="default-margin" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Default Global Margin (%)</label>
                         <input
-                            type="number"
+                            id="default-margin" type="number" min="0" max="100" step="0.1"
                             className="filter-input"
                             value={marginState}
                             onChange={e => setMarginState(Number(e.target.value))}
@@ -186,12 +192,25 @@ export const SettingsPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                     a.href = url;
                                     a.download = `backup_${new Date().toISOString().slice(0, 10)}.json`;
                                     a.click();
+                                    URL.revokeObjectURL(url);
                                 }}
                                 className="secondary-btn"
                                 style={{ width: '100%', marginTop: '0.5rem' }}
                             >
                                 Download Backup
                             </button>
+                            <input type="password" value={backupPassword} onChange={e => setBackupPassword(e.target.value)} placeholder="Password for encrypted backup" aria-label="Backup password" style={{ width: '100%', marginTop: '0.75rem', padding: '0.5rem' }} />
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        const { createEncryptedBackup } = await import('../utils/backup');
+                                        const blob = await createEncryptedBackup(backupPassword);
+                                        const url = URL.createObjectURL(blob);
+                                        const a = document.createElement('a'); a.href = url; a.download = `backup_${new Date().toISOString().slice(0, 10)}.encrypted.json`; a.click(); URL.revokeObjectURL(url);
+                                    } catch (err) { alert(err instanceof Error ? err.message : 'Encrypted backup failed.'); }
+                                }}
+                                className="secondary-btn" style={{ width: '100%', marginTop: '0.5rem' }}
+                            >Download Encrypted Backup</button>
                         </div>
                         <div style={{ flex: 1, minWidth: '250px', padding: '1rem', border: '1px solid var(--border-color)', borderRadius: '8px' }}>
                             <h4 style={{ marginTop: 0 }}>Restore Backup</h4>
@@ -206,7 +225,7 @@ export const SettingsPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                         if (confirm('Restoring will overwrite all current data. Continue?')) {
                                             try {
                                                 const { restoreBackup } = await import('../utils/backup');
-                                                const result = await restoreBackup(e.target.files[0]);
+                                                const result = await restoreBackup(e.target.files[0], backupPassword || undefined);
                                                 alert(result);
                                                 onBack();
                                             } catch (err) {

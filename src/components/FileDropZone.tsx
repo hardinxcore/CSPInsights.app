@@ -10,6 +10,7 @@ interface FileDropZoneProps {
     icon?: React.ReactNode;
     multiple?: boolean;
     loadingText?: string;
+    onCancel?: () => void;
 }
 
 export const FileDropZone: React.FC<FileDropZoneProps> = ({
@@ -20,17 +21,18 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({
     description,
     icon,
     multiple = false,
-    loadingText = "Processing..."
+    loadingText = "Processing...",
+    onCancel
 }) => {
     const [isDragActive, setIsDragActive] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleFiles = (fileList: FileList | File[]) => {
+    const handleFiles = useCallback((fileList: FileList | File[]) => {
         const files = Array.from(fileList);
         if (files.length > 0) {
             onFileSelect(files);
         }
-    };
+    }, [onFileSelect]);
 
     const onDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault();
@@ -38,7 +40,7 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({
         if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
             handleFiles(e.dataTransfer.files);
         }
-    }, [onFileSelect]);
+    }, [handleFiles]);
 
     const onDragOver = (e: React.DragEvent) => {
         e.preventDefault();
@@ -67,6 +69,11 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({
                 onDragOver={onDragOver}
                 onDragLeave={onDragLeave}
                 onClick={() => !isLoading && fileInputRef.current?.click()}
+                onKeyDown={e => { if (!isLoading && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); fileInputRef.current?.click(); } }}
+                role="button"
+                tabIndex={isLoading ? -1 : 0}
+                aria-label={title}
+                aria-busy={isLoading}
                 className={`dropzone ${isDragActive ? 'active' : ''}`}
                 style={{
                     border: '2px dashed var(--border-color)',
@@ -92,6 +99,7 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
                         <Loader2 className="animate-spin" size={48} color="var(--brand-turquoise)" />
                         <p>{loadingText}</p>
+                        {onCancel && <button type="button" onClick={onCancel} className="secondary-btn" aria-label="Cancel import">Cancel</button>}
                     </div>
                 ) : (
                     <>

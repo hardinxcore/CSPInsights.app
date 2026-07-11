@@ -1,4 +1,5 @@
 import Papa from 'papaparse';
+import { parseMoney } from '../utils/parseNumber';
 import type { PriceRow } from '../types/PricingData';
 
 // Worker context
@@ -39,8 +40,8 @@ ctx.onmessage = async (e: MessageEvent) => {
                         BillingPlan: row['BillingPlan'] || '',
                         Market: row['Market'] || '',
                         Currency: row['Currency'] || '',
-                        UnitPrice: parseFloat(row['UnitPrice'] || '0'),
-                        ERPPrice: parseFloat(row['ERP Price'] || '0'),
+                        UnitPrice: parseMoney(row['UnitPrice']),
+                        ERPPrice: parseMoney(row['ERP Price']),
                         EffectiveStartDate: row['EffectiveStartDate'] || '',
                         Segment: row['Segment'] || '',
                         Tags: row['Tags'] || ''

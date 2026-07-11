@@ -1,5 +1,23 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { del, get, set } from 'idb-keyval';
+
+const cartStorage = {
+    getItem: async (name: string) => {
+        const value = await get<string>(name);
+        if (value) return value;
+        // One-time migration from the previous Zustand localStorage backend.
+        const legacyValue = typeof localStorage !== 'undefined' ? localStorage.getItem(name) : null;
+        if (legacyValue) await set(name, legacyValue);
+        return legacyValue;
+    },
+    setItem: async (name: string, value: string) => {
+        await set(name, value);
+    },
+    removeItem: async (name: string) => {
+        await del(name);
+    },
+};
 
 interface SavedQuote {
     id: string;
@@ -75,7 +93,8 @@ export const useCartStore = create<CartState>()(
             })),
         }),
         {
-            name: 'partner-center-cart', // unique name for localStorage key
+            name: 'partner-center-cart',
+            storage: createJSONStorage(() => cartStorage),
         }
     )
 );

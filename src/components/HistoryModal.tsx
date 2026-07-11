@@ -25,7 +25,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({ onClose, mode = 'bil
 
     useEffect(() => {
         loadSnapshots();
-    }, [mode]); // Reload if mode changes
+    }, [loadSnapshots, mode]); // Reload if mode changes
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();

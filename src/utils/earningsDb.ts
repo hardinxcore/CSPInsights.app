@@ -25,10 +25,16 @@ interface EarningsDB extends DBSchema {
 }
 
 const DB_NAME = 'csp-earnings-db';
+const DB_VERSION = 3;
 
 const initEarningsDB = async () => {
-    return openDB<EarningsDB>(DB_NAME, 2, {
-        upgrade(db) {
+    const db = await openDB<EarningsDB>(DB_NAME, DB_VERSION, {
+        upgrade(db, oldVersion) {
+            if (oldVersion < 1) {
+                db.createObjectStore('earnings', { keyPath: 'id' });
+                db.createObjectStore('payments', { keyPath: 'id' });
+                return;
+            }
             if (!db.objectStoreNames.contains('earnings')) {
                 db.createObjectStore('earnings', { keyPath: 'id' });
             }
@@ -37,6 +43,8 @@ const initEarningsDB = async () => {
             }
         },
     });
+    db.onversionchange = () => db.close();
+    return db;
 };
 
 // ── Earnings ──────────────────────────────────────────────────────────────────

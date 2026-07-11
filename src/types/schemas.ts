@@ -1,14 +1,7 @@
 import { z } from 'zod';
+import { parseMoney } from '../utils/parseNumber';
 
-const numberPreprocess = (val: unknown) => {
-    if (typeof val === 'number') return val;
-    if (typeof val === 'string') {
-        const clean = val.replace(/[^0-9.-]/g, '');
-        const num = parseFloat(clean);
-        return isNaN(num) ? 0 : num;
-    }
-    return 0;
-};
+const numberPreprocess = (val: unknown) => parseMoney(val);
 
 export const BillingRecordSchema = z.object({
     PartnerId: z.string().optional(),
@@ -72,3 +65,37 @@ export const BillingRecordSchema = z.object({
 });
 
 export type BillingRecord = z.infer<typeof BillingRecordSchema>;
+
+export const BackupSchema = z.object({
+  version: z.string().min(1),
+  timestamp: z.string().datetime(),
+  billing: z.object({
+    data: z.array(BillingRecordSchema),
+    meta: z.unknown(),
+    marginRules: z.record(z.string(), z.number()),
+    customerTags: z.record(z.string(), z.array(z.string())),
+    globalMargin: z.number().finite(),
+    snapshots: z.array(z.unknown()).optional(),
+  }),
+  settings: z.object({
+    companyDetails: z.object({
+      name: z.string(),
+      addressLine1: z.string(),
+      addressLine2: z.string(),
+      iban: z.string(),
+    }).passthrough(),
+    defaultMargin: z.number().finite(),
+    theme: z.enum(['light', 'dark']),
+  }),
+  pricing: z.object({
+    rows: z.array(z.unknown()),
+    meta: z.unknown(),
+    favorites: z.array(z.string()),
+    snapshots: z.array(z.unknown()).optional(),
+  }).optional(),
+  cart: z.object({
+    quantities: z.record(z.string(), z.number()),
+    customerReference: z.string(),
+    savedQuotes: z.array(z.unknown()),
+  }).optional(),
+}).passthrough();

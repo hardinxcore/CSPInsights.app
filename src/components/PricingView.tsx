@@ -140,7 +140,7 @@ export const PricingView: React.FC = () => {
             }
         });
         return { total, count };
-    }, [quantities, rows, showMargins]);
+    }, [quantities, rows]);
 
 
     // Virtualizer

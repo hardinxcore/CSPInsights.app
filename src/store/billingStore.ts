@@ -1,14 +1,12 @@
 import { create } from 'zustand';
-import type { BillingRecord } from '../types/BillingData';
+import type { BillingMeta, BillingRecord } from '../types/BillingData';
 import { loadBillingData, saveBillingData, clearBillingData, loadCustomerMetadata, saveCustomerMetadata } from '../utils/db';
+import { useSettingsStore } from './settingsStore';
+import { currencyLabel, currencyTotals, uniqueByKey } from '../utils/aggregation';
 
 interface BillingState {
     data: BillingRecord[];
-    meta: {
-        totalRows: number;
-        customersCount: number;
-        totalAmount: number;
-    };
+    meta: BillingMeta;
     marginRules: Record<string, number>; // CustomerName -> Margin %
     customerTags: Record<string, string[]>; // CustomerName -> Tags[]
     globalMargin: number;
@@ -30,9 +28,16 @@ interface BillingState {
     removeTag: (customerName: string, tag: string) => void;
 }
 
+const persistErrorMessage = (err: unknown): string => {
+    if (err instanceof DOMException && err.name === 'QuotaExceededError') {
+        return 'Browser storage is full: your data could NOT be saved and will be lost on reload. Export a backup or clear old data.';
+    }
+    return 'Failed to save data to local storage. Changes may be lost on reload.';
+};
+
 export const useBillingStore = create<BillingState>((set) => ({
     data: [],
-    meta: { totalRows: 0, customersCount: 0, totalAmount: 0 },
+    meta: { totalRows: 0, customersCount: 0, totalAmount: 0, currency: 'UNKNOWN', totalsByCurrency: {} },
     marginRules: {},
     customerTags: {},
     globalMargin: 20,
@@ -40,27 +45,41 @@ export const useBillingStore = create<BillingState>((set) => ({
     error: null,
 
     setData: (data: BillingRecord[]) => {
-        const totalAmount = data.reduce((sum, r) => sum + (r.Total || r.Subtotal || 0), 0);
-        const customersCount = new Set(data.map(r => r.CustomerName)).size;
-        const meta = { totalRows: data.length, customersCount, totalAmount };
+        const dedupedData = uniqueByKey(data, billingRecordKey);
+        const totalAmount = dedupedData.reduce((sum, r) => sum + (r.Total || r.Subtotal || 0), 0);
+        const customersCount = new Set(dedupedData.map(r => r.CustomerName)).size;
+        const totalsByCurrency = currencyTotals(dedupedData, row => row.Currency || row.PricingCurrency, row => row.Total || row.Subtotal || 0);
+        const meta = { totalRows: dedupedData.length, customersCount, totalAmount, currency: currencyLabel(totalsByCurrency), totalsByCurrency };
 
-        saveBillingData(data, meta).catch(console.error);
-        set({ data, meta, error: null });
+        saveBillingData(data, meta).catch((err) => {
+            console.error('Failed to persist billing data', err);
+            set({ error: persistErrorMessage(err) });
+        });
+        // Apply the configured default margin when loading a fresh dataset
+        set({ data: dedupedData, meta, globalMargin: useSettingsStore.getState().defaultMargin, error: null });
     },
 
     appendData: (newData: BillingRecord[]) => {
         set((state) => {
             const combinedData = [...state.data, ...newData];
-            const totalAmount = combinedData.reduce((sum, r) => sum + (r.Total || r.Subtotal || 0), 0);
-            const customersCount = new Set(combinedData.map(r => r.CustomerName)).size;
-            const meta = { totalRows: combinedData.length, customersCount, totalAmount };
+            const dedupedData = uniqueByKey(combinedData, billingRecordKey);
+            const dedupedTotal = dedupedData.reduce((sum, r) => sum + (r.Total || r.Subtotal || 0), 0);
+            const totalsByCurrency = currencyTotals(dedupedData, row => row.Currency || row.PricingCurrency, row => row.Total || row.Subtotal || 0);
+            const meta = { totalRows: dedupedData.length, customersCount: new Set(dedupedData.map(r => r.CustomerName)).size, totalAmount: dedupedTotal, currency: currencyLabel(totalsByCurrency), totalsByCurrency };
 
-            saveBillingData(combinedData, meta).catch(console.error);
-            return { data: combinedData, meta, error: null };
+            saveBillingData(dedupedData, meta).catch((err) => {
+                console.error('Failed to persist billing data', err);
+                set({ error: persistErrorMessage(err) });
+            });
+            return { data: dedupedData, meta, error: null };
         });
     },
 
-    setGlobalMargin: (margin: number) => set({ globalMargin: margin }),
+    setGlobalMargin: (margin: number) => {
+        set({ globalMargin: margin });
+        const state = useBillingStore.getState();
+        saveCustomerMetadata({ margins: state.marginRules, tags: state.customerTags, globalMargin: margin }).catch(console.error);
+    },
 
     setCustomerMargin: (customerName: string, margin: number) => {
         set((state) => {
@@ -75,7 +94,7 @@ export const useBillingStore = create<BillingState>((set) => ({
         try {
             const saved = await loadBillingData();
             if (saved && saved.data) {
-                set({ data: saved.data, meta: saved.meta });
+                set({ data: saved.data, meta: saved.meta, globalMargin: useSettingsStore.getState().defaultMargin });
             }
 
             // Load persistent settings (margins & tags)
@@ -83,7 +102,8 @@ export const useBillingStore = create<BillingState>((set) => ({
             if (metadata) {
                 set({
                     marginRules: metadata.margins || {},
-                    customerTags: metadata.tags || {}
+                    customerTags: metadata.tags || {},
+                    globalMargin: typeof metadata.globalMargin === 'number' ? metadata.globalMargin : useSettingsStore.getState().defaultMargin
                 });
             }
         } catch (err: any) {
@@ -100,7 +120,7 @@ export const useBillingStore = create<BillingState>((set) => ({
     reset: async () => {
         await clearBillingData();
         // NOTE: We do NOT clear customerMetadata (tags/margins) on reset, as requested.
-        set({ data: [], meta: { totalRows: 0, customersCount: 0, totalAmount: 0 }, error: null, searchQuery: '' });
+        set({ data: [], meta: { totalRows: 0, customersCount: 0, totalAmount: 0, currency: 'UNKNOWN', totalsByCurrency: {} }, error: null, searchQuery: '' });
     },
 
     addTag: (customerName: string, tag: string) => {
@@ -123,3 +143,8 @@ export const useBillingStore = create<BillingState>((set) => ({
         });
     }
 }));
+
+const billingRecordKey = (row: BillingRecord): string => [
+    row.InvoiceNumber, row.OrderId, row.SubscriptionId, row.ProductId, row.SkuId,
+    row.ChargeStartDate, row.ChargeEndDate, row.Total, row.Currency, row.SourceFile,
+].map(value => value ?? '').join('|');

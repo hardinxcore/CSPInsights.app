@@ -122,6 +122,8 @@ export interface EarningsMeta {
     totalEarningAmount: number;
     /** ISO 4217 currency code derived from the first record's transactionCurrency */
     currency: string;
+    /** Totals grouped by currency; required when a file contains multiple currencies. */
+    totalsByCurrency?: Record<string, number>;
 }
 
 /**
@@ -193,6 +195,7 @@ export interface PaymentsMeta {
     totalTax: number;
     /** ISO 4217 currency code derived from the first record's earnedCurrencyCode */
     currency: string;
+    totalsByCurrency?: Record<string, { earned: number; paid: number; tax: number }>;
 }
 
 /**

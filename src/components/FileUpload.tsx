@@ -5,14 +5,17 @@ import { useSnapshotStore } from '../store/snapshotStore';
 
 interface FileUploadProps {
     onFileSelect: (files: File[]) => void;
+    isLoading?: boolean;
+    onCancel?: () => void;
+    loadingText?: string;
 }
 
-export const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect }) => {
-    const { snapshots, loadSnapshots, restoreSnapshot, isLoading } = useSnapshotStore();
+export const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect, isLoading = false, onCancel, loadingText }) => {
+    const { snapshots, loadSnapshots, restoreSnapshot, isLoading: snapshotsLoading } = useSnapshotStore();
 
     useEffect(() => {
         loadSnapshots();
-    }, []);
+    }, [loadSnapshots]);
 
     const handleSelect = (files: File[]) => {
         const validFiles = files.filter(file => file.name.toLowerCase().endsWith('.csv') || file.name.toLowerCase().endsWith('.csv.gz'));
@@ -38,7 +41,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect }) => {
                 title="Upload Reconciliation Files"
                 description="Drag & drop your Partner Center CSVs here"
                 onFileSelect={handleSelect}
-                isLoading={false}
+                isLoading={isLoading}
+                onCancel={onCancel}
+                loadingText={loadingText}
                 accept=".csv, .gz"
                 multiple={true}
                 icon={<Files size={24} style={{ marginRight: '10px', color: 'var(--brand-turquoise)' }} />}
@@ -70,7 +75,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect }) => {
                                     </div>
                                 </div>
                                 <div style={{ color: 'var(--brand-turquoise)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', fontWeight: 500 }}>
-                                    {isLoading ? 'Loading...' : <><RotateCcw size={16} /> Restore</>}
+                                    {snapshotsLoading ? 'Loading...' : <><RotateCcw size={16} /> Restore</>}
                                 </div>
                             </button>
                         ))}

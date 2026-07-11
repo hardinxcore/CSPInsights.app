@@ -366,8 +366,8 @@ export const CostTimeline: React.FC = () => {
     }, [selectedMonth, recordsByMonth, periodRecords]);
 
     // Records for the table — drill-down month OR full period
-    const baseRows = selectedMonth ? (recordsByMonth.get(selectedMonth) ?? []) : periodRecords;
     const tableRows = useMemo(() => {
+        const baseRows = selectedMonth ? (recordsByMonth.get(selectedMonth) ?? []) : periodRecords;
         const s = search.toLowerCase();
         const filtered = s
             ? baseRows.filter(r => r.CustomerName.toLowerCase().includes(s) || r.ProductName.toLowerCase().includes(s))
@@ -381,7 +381,7 @@ export const CostTimeline: React.FC = () => {
             const bv = String((b as any)[sort.key] ?? '');
             return sort.dir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
         });
-    }, [baseRows, search, sort]);
+    }, [selectedMonth, recordsByMonth, periodRecords, search, sort]);
 
     // Period summary stats
     const stats = useMemo(() => {

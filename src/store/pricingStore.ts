@@ -7,7 +7,8 @@ const DB_NAME = 'PartnerCenterPricingDB';
 const STORE_NAME = 'pricing';
 const DB_VERSION = 4;
 
-const getDB = async () => {
+// Exported so backup/restore reuses the same schema + upgrade logic
+export const getDB = async () => {
     return openDB(DB_NAME, DB_VERSION, {
         upgrade(db) {
             if (!db.objectStoreNames.contains(STORE_NAME)) {

@@ -1,22 +1,25 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { FileUpload } from './components/FileUpload';
 import { Dashboard } from './components/Dashboard';
 import { SettingsPage } from './components/SettingsPage';
 import { HistoryModal } from './components/HistoryModal';
-import { parseBillingCSVs } from './utils/csvParser';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { cancelBillingParse, parseBillingCSVs } from './utils/csvParser';
 import { useBillingStore } from './store/billingStore';
 import { useSettingsStore } from './store/settingsStore';
 import { useEarningsStore } from './store/earningsStore';
-import { AzureAnalyzer } from './components/AzureAnalyzer';
-import { NceAnalyzer } from './components/NceAnalyzer';
-import { RenewalCalendar } from './components/RenewalCalendar';
-import { CostTimeline } from './components/CostTimeline';
-import { PricingView } from './components/PricingView';
 import { HomeDashboard } from './components/HomeDashboard';
-import { EarningsView } from './components/EarningsView';
-import { Loader2, Settings, History, Sun, Moon, Search, LayoutGrid, BarChart3, Cloud, ShieldCheck, ExternalLink, TrendingUp, CalendarDays, LineChart } from 'lucide-react';
+import { Loader2, BarChart3, Cloud, ShieldCheck, ExternalLink, TrendingUp, CalendarDays, LineChart } from 'lucide-react';
+import { AppHeader, type AppView } from './components/AppHeader';
 import { generateDemoData } from './utils/demoData';
 import './App.css';
+
+const AzureAnalyzer = lazy(() => import('./components/AzureAnalyzer').then(m => ({ default: m.AzureAnalyzer })));
+const NceAnalyzer = lazy(() => import('./components/NceAnalyzer').then(m => ({ default: m.NceAnalyzer })));
+const RenewalCalendar = lazy(() => import('./components/RenewalCalendar').then(m => ({ default: m.RenewalCalendar })));
+const CostTimeline = lazy(() => import('./components/CostTimeline').then(m => ({ default: m.CostTimeline })));
+const PricingView = lazy(() => import('./components/PricingView').then(m => ({ default: m.PricingView })));
+const EarningsView = lazy(() => import('./components/EarningsView').then(m => ({ default: m.EarningsView })));
 
 function App() {
   const {
@@ -36,38 +39,48 @@ function App() {
   const { loadFromDisk: loadEarningsFromDisk } = useEarningsStore();
 
   // Navigation State
-  const [currentView, setCurrentView] = useState<'home' | 'dashboard' | 'settings' | 'azure' | 'nce' | 'renewals' | 'timeline' | 'pricing' | 'incentives'>('home');
+  const [currentView, setCurrentView] = useState<AppView>('home');
   const [showHistory, setShowHistory] = useState(false);
   const [isUploading, setIsUploading] = useState(false); // New state to control upload view overlay
+  const [notification, setNotification] = useState<string | null>(null);
+  const [isParsing, setIsParsing] = useState(false);
+  const [parsingProgress, setParsingProgress] = useState(0);
 
-  // Load persisted data on mount
+  // Load persisted data on mount (settings first, so the default margin is known)
   useEffect(() => {
-    loadFromDisk();
-    loadSettings();
+    (async () => {
+      await loadSettings();
+      await loadFromDisk();
+    })();
     loadEarningsFromDisk();
-  }, []);
+  }, [loadEarningsFromDisk, loadFromDisk, loadSettings]);
 
   const handleFileSelect = async (files: File[]) => {
+    setIsParsing(true);
+    setParsingProgress(0);
     try {
-      const result = await parseBillingCSVs(files);
+      const result = await parseBillingCSVs(files, setParsingProgress);
       if (result.errors && result.errors.length > 0) {
         console.warn('Errors during parse:', result.errors);
-        alert(`Warning: Some rows were skipped or invalid.\n${result.errors.slice(0, 5).join('\n')}`);
+        setNotification(`Some rows were skipped or invalid. ${result.errors.slice(0, 3).join(' ')}`);
       }
       if (result.data.length === 0) {
-        alert('No valid billing records found in file(s). Please check the file format.');
+        setNotification('No valid billing records found in the selected file(s). Please check the export format.');
       }
 
       if (data.length > 0) {
         appendData(result.data);
-        alert(`Added ${result.data.length} records to existing data.`);
+        setNotification(`Added ${result.data.length} records to the existing dataset.`);
       } else {
         setData(result.data);
       }
       setIsUploading(false); // Return to dashboard
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      alert(err.message || 'Failed to parse CSVs');
+      setNotification(err instanceof Error ? err.message : 'Failed to parse CSVs.');
+    } finally {
+      setIsParsing(false);
+      setParsingProgress(0);
     }
   };
 
@@ -106,91 +119,13 @@ function App() {
         />
       )}
 
-      {/* Header ... (unchanged) ... */}
-      <header className="app-header glass-panel">
-        <div className="container flex-center" style={{ justifyContent: 'space-between', padding: '1rem 0' }}>
-          <div className="flex-center" style={{ gap: '1rem', cursor: 'pointer' }} onClick={() => setCurrentView('home')}>
-            <img src={companyDetails.logoUrl || "/microsoft-logo.svg"} alt={companyDetails.name} style={{ height: '40px' }} />
-            <h1 className="text-gradient" style={{ fontSize: '1.5rem', margin: 0 }}>
-              CSP Insights
-            </h1>
-          </div>
-
-          {/* Search Section */}
-          <div className="flex-center" style={{ flex: 1, justifyContent: 'center', padding: '0 2rem', opacity: (currentView === 'home' || currentView === 'pricing' || currentView === 'settings' || currentView === 'incentives' || currentView === 'renewals' || currentView === 'timeline') ? 0 : 1, pointerEvents: (currentView === 'home' || currentView === 'pricing' || currentView === 'settings' || currentView === 'incentives' || currentView === 'renewals' || currentView === 'timeline') ? 'none' : 'auto' }}>
-            <div style={{ position: 'relative', width: '100%', maxWidth: '500px' }}>
-              <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
-              <input
-                type="text"
-                placeholder="Search customers, products, or IDs..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '0.75rem 1rem 0.75rem 2.75rem',
-                  borderRadius: '2rem',
-                  border: '1px solid var(--border-color)',
-                  background: 'var(--bg-primary)',
-                  color: 'var(--text-primary)',
-                  outline: 'none',
-                  boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.05)',
-                  transition: 'all 0.2s ease'
-                }}
-                onFocus={(e) => e.target.style.borderColor = 'var(--accent-secondary)'}
-                onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}
-                >
-                  x
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="flex-center" style={{ gap: '0.5rem' }}>
-            <button
-              onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-              className="secondary-btn"
-              title={theme === 'light' ? "Switch to Dark Mode" : "Switch to Light Mode"}
-              style={{ borderRadius: '50%', width: '40px', height: '40px', padding: 0, display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-            >
-              {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-            </button>
-            <button
-              onClick={() => setCurrentView('home')}
-              className={`secondary-btn ${currentView === 'home' ? 'active' : ''}`}
-              title="Home"
-              style={{ borderRadius: '50%', width: '40px', height: '40px', padding: 0, display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-            >
-              <LayoutGrid size={20} />
-            </button>
-            {(currentView === 'dashboard' || currentView === 'azure' || currentView === 'nce' || currentView === 'renewals' || currentView === 'timeline' || currentView === 'pricing' || currentView === 'incentives') && (
-              <button
-                onClick={() => setShowHistory(true)}
-                className="secondary-btn"
-                title="History & Snapshots"
-                style={{ borderRadius: '50%', width: '40px', height: '40px', padding: 0, display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-              >
-                <History size={20} />
-              </button>
-            )}
-            <button
-              onClick={() => setCurrentView('settings')}
-              className={`secondary-btn ${currentView === 'settings' ? 'active' : ''}`}
-              title="Settings"
-              style={{ borderRadius: '50%', width: '40px', height: '40px', padding: 0, display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-            >
-              <Settings size={20} />
-            </button>
-          </div>
-        </div>
-      </header>
+      <AppHeader currentView={currentView} companyName={companyDetails.name} logoUrl={companyDetails.logoUrl} theme={theme} searchQuery={searchQuery} onViewChange={setCurrentView} onThemeChange={() => setTheme(theme === 'light' ? 'dark' : 'light')} onSearchChange={setSearchQuery} onHistory={() => setShowHistory(true)} />
 
 
       <main className="container animate-fade-in" style={{ marginTop: '2rem' }}>
+        {notification && <div role="alert" className="glass-panel" style={{ padding: '1rem', marginBottom: '1rem', borderLeft: '4px solid var(--accent-primary)' }}><span>{notification}</span><button onClick={() => setNotification(null)} style={{ float: 'right' }} aria-label="Dismiss notification">Dismiss</button></div>}
+        <ErrorBoundary>
+        <Suspense fallback={<div className="flex-center" style={{ minHeight: '400px' }}><Loader2 className="animate-spin" size={40} color="var(--accent-primary)" /></div>}>
         {currentView === 'settings' && (
           <SettingsPage onBack={() => setCurrentView('home')} />
         )}
@@ -302,7 +237,7 @@ function App() {
                   </button>
                 )}
 
-                <FileUpload onFileSelect={handleFileSelect} />
+                <FileUpload onFileSelect={handleFileSelect} isLoading={isParsing} loadingText={`Processing files… ${parsingProgress}%`} onCancel={cancelBillingParse} />
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginTop: '1.5rem', color: 'var(--success)', fontWeight: 500 }}>
                   <ShieldCheck size={18} />
@@ -335,6 +270,8 @@ function App() {
             )}
           </>
         )}
+        </Suspense>
+        </ErrorBoundary>
       </main>
 
       <footer style={{ textAlign: 'center', padding: '2rem 1rem 1rem', color: 'var(--text-tertiary)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>

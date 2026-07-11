@@ -68,5 +68,15 @@ export interface ParseResult {
         totalRows: number;
         customersCount: number;
         totalAmount: number;
+        currency?: string;
+        totalsByCurrency?: Record<string, number>;
     };
+}
+
+export interface BillingMeta {
+    totalRows: number;
+    customersCount: number;
+    totalAmount: number;
+    currency?: string;
+    totalsByCurrency?: Record<string, number>;
 }

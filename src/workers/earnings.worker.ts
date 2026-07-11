@@ -1,25 +1,19 @@
 import Papa from 'papaparse';
+import { parseMoney as toNum, toStr } from '../utils/parseNumber';
 
 const EXPECTED_COLUMNS = ['earningId', 'earningAmount', 'customerName'];
-
-const toNum = (val: any): number => {
-    if (typeof val === 'number') return val;
-    if (typeof val === 'string') {
-        const n = parseFloat(val.replace(/[^0-9.-]/g, ''));
-        return isNaN(n) ? 0 : n;
-    }
-    return 0;
-};
-
-const toStr = (val: any): string => (val != null ? String(val).trim() : '');
+let cancelled = false;
 
 self.onmessage = async (e: MessageEvent) => {
+    if (e.data?.type === 'CANCEL') { cancelled = true; return; }
+    cancelled = false;
     const { files } = e.data;
     const allData: any[] = [];
     const errors: string[] = [];
 
     try {
         for (const file of files) {
+            if (cancelled) { self.postMessage({ type: 'CANCELLED' }); return; }
             await new Promise<void>((resolve) => {
                 let headerRowIndex = 0;
 
@@ -47,6 +41,7 @@ self.onmessage = async (e: MessageEvent) => {
                             return chunk;
                         },
                         complete: (results) => {
+                            if (cancelled) { resolve(); return; }
                             results.data.forEach((row: any) => {
                                 // Skip rows without a valid earningId
                                 if (!row.earningId || String(row.earningId).trim() === '') return;
@@ -117,10 +112,16 @@ self.onmessage = async (e: MessageEvent) => {
                     });
                 };
 
+                preReader.onerror = () => {
+                    errors.push(`Failed to read file ${file.name}`);
+                    resolve();
+                };
+
                 preReader.readAsText(file.slice(0, 10240));
             });
         }
 
+        if (cancelled) { self.postMessage({ type: 'CANCELLED' }); return; }
         self.postMessage({ type: 'SUCCESS', payload: { data: allData, errors } });
     } catch (err: any) {
         self.postMessage({ type: 'ERROR', payload: err.message });

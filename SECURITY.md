@@ -24,3 +24,7 @@ Since this is a fully client-side application, the main security concerns are:
 - XSS vulnerabilities in data rendering
 - Malicious CSV/file content handling
 - Dependencies with known vulnerabilities
+
+## Local data warning
+
+Imported billing, pricing, incentive data, company details, and cart data are stored in the browser profile. Plain backup exports are unencrypted JSON; password-protected AES-GCM backups are available for transfers. Do not use a shared browser profile for sensitive data and keep backup passwords separate from backup files.

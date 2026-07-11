@@ -62,6 +62,16 @@ npm update
 
 *   **Geheugen**: Omdat alles in de browser draait, kunnen bestanden van >500MB de browser vertragen. De Web Workers helpen hierbij, maar er is een limiet aan browsergeheugen.
 *   **Cache**: Als je een nieuwe versie van de app publiceert ("deploy"), moeten gebruikers soms hun scherm verversen (Ctrl+F5) om de nieuwe versie te zien.
+*   **Valuta**: Totalen worden per valuta bijgehouden. Een `MIXED`-label betekent dat bedragen niet zonder wisselkoers mogen worden opgeteld.
+*   **Importlimiet**: Imports boven 500 MB worden geweigerd om browsergeheugen en tab-crashes te voorkomen.
+*   **Lokale opslag**: Browserdata en gewone backups zijn niet versleuteld. Gebruik geen gedeeld browserprofiel voor productiegegevens.
+*   **Versleutelde backup**: Gebruik de password-protected backupoptie voor overdracht. De applicatie kan het wachtwoord niet herstellen.
 
 ## 6. Backup Strategie voor Ontwikkelaars
-Maak altijd een 'commit' in Git voordat je grote wijzigingen doet.
+Maak altijd een 'commit' in Git voordat je grote wijzigingen doet. Voer vóór merge minimaal uit:
+```bash
+npm run lint
+npm test
+npm run build
+npm run e2e
+```

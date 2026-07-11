@@ -1,5 +1,6 @@
 import { openDB, type DBSchema } from 'idb';
 import type { BillingRecord } from '../types/BillingData';
+import type { BillingMeta } from '../types/BillingData';
 
 interface BillingDB extends DBSchema {
     billing: {
@@ -8,23 +9,36 @@ interface BillingDB extends DBSchema {
             id: string; // 'latest' or uuid/timestamp
             name?: string; // User-friendly name
             data: BillingRecord[];
-            meta: any;
+            meta: BillingMeta;
             updatedAt: number;
         };
     };
     settings: {
         key: string;
-        value: any;
+        value: CustomerMetadata;
     };
 }
 
 const DB_NAME = 'partner-center-automation-db';
 const STORE_NAME = 'billing';
 const SETTINGS_STORE = 'settings';
+const DB_VERSION = 3;
+
+export interface CustomerMetadata {
+    margins?: Record<string, number>;
+    tags?: Record<string, string[]>;
+    globalMargin?: number;
+}
 
 export const initDB = async () => {
-    return openDB<BillingDB>(DB_NAME, 2, {
-        upgrade(db) {
+    const db = await openDB<BillingDB>(DB_NAME, DB_VERSION, {
+        upgrade(db, oldVersion) {
+            // Version 3 formalizes the metadata shape; existing records remain compatible.
+            if (oldVersion < 1) {
+                db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                db.createObjectStore(SETTINGS_STORE);
+                return;
+            }
             if (!db.objectStoreNames.contains(STORE_NAME)) {
                 db.createObjectStore(STORE_NAME, { keyPath: 'id' });
             }
@@ -33,9 +47,11 @@ export const initDB = async () => {
             }
         },
     });
+    db.onversionchange = () => db.close();
+    return db;
 };
 
-export const saveBillingData = async (data: BillingRecord[], meta: any) => {
+export const saveBillingData = async (data: BillingRecord[], meta: BillingMeta) => {
     const db = await initDB();
     await db.put(STORE_NAME, {
         id: 'latest',
@@ -58,7 +74,7 @@ export const clearBillingData = async () => {
 
 /* Snapshot Functions */
 
-export const saveSnapshot = async (name: string, data: BillingRecord[], meta: any) => {
+export const saveSnapshot = async (name: string, data: BillingRecord[], meta: BillingMeta) => {
     const db = await initDB();
     const id = `snap-${Date.now()}`;
     await db.put(STORE_NAME, {
@@ -101,12 +117,12 @@ export const updateSnapshotName = async (id: string, newName: string) => {
 }
 
 
-export const saveCustomerMetadata = async (metadata: Record<string, any>) => {
+export const saveCustomerMetadata = async (metadata: CustomerMetadata) => {
     const db = await initDB();
     await db.put(SETTINGS_STORE, metadata, 'customer-metadata');
 };
 
-export const loadCustomerMetadata = async () => {
+export const loadCustomerMetadata = async (): Promise<CustomerMetadata> => {
     const db = await initDB();
-    return await db.get(SETTINGS_STORE, 'customer-metadata') || {};
+    return (await db.get(SETTINGS_STORE, 'customer-metadata')) || {};
 };
