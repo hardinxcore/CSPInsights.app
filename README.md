@@ -62,7 +62,7 @@ Managing Microsoft CSP operations means wrestling with massive reconciliation CS
 ### Privacy & Security
 - **100% client-side** — all processing happens in your browser
 - **IndexedDB storage** — billing, pricing, earnings, settings, and cart data persist locally between sessions
-- **No telemetry** — no analytics, no tracking, no data collection
+- **Anonymous usage statistics only** — the hosted app counts page views and which modules are opened (Azure Application Insights, cookieless, IP discarded after country lookup). No identifiers are stored and **Do Not Track / Global Privacy Control is honoured** — with either enabled, the analytics code is never even loaded. Your billing, pricing, and earnings data are never part of this: business data stays in your browser
 - **Unencrypted local data** — anyone with access to the same browser profile may be able to inspect the data
 - **Encrypted backups available** — use the password-protected backup option for transfers; keep the password separate from the backup file
 - Clearing your browser data removes everything

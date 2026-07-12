@@ -12,6 +12,7 @@ import { HomeDashboard } from './components/HomeDashboard';
 import { Loader2, BarChart3, Cloud, ShieldCheck, ExternalLink, TrendingUp, CalendarDays, LineChart } from 'lucide-react';
 import { AppHeader, type AppView } from './components/AppHeader';
 import { generateDemoData } from './utils/demoData';
+import { initAnalytics, trackModuleView } from './utils/analytics';
 import './App.css';
 
 const AzureAnalyzer = lazy(() => import('./components/AzureAnalyzer').then(m => ({ default: m.AzureAnalyzer })));
@@ -63,7 +64,13 @@ function App() {
       await loadFromDisk();
     })();
     loadEarningsFromDisk();
+    initAnalytics();
   }, [loadEarningsFromDisk, loadFromDisk, loadSettings]);
+
+  // Anonymous module-usage tracking (no-op in dev, with DNT/GPC, or when blocked)
+  useEffect(() => {
+    trackModuleView(currentView);
+  }, [currentView]);
 
   const handleFileSelect = async (files: File[]) => {
     setIsParsing(true);
