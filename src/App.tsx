@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState, type CSSProperties } from 'react';
 import { FileUpload } from './components/FileUpload';
 import { Dashboard } from './components/Dashboard';
 import { SettingsPage } from './components/SettingsPage';
@@ -20,6 +20,16 @@ const RenewalCalendar = lazy(() => import('./components/RenewalCalendar').then(m
 const CostTimeline = lazy(() => import('./components/CostTimeline').then(m => ({ default: m.CostTimeline })));
 const PricingView = lazy(() => import('./components/PricingView').then(m => ({ default: m.PricingView })));
 const EarningsView = lazy(() => import('./components/EarningsView').then(m => ({ default: m.EarningsView })));
+
+// Longhand borders only: mixing the `border` shorthand with `borderBottom`
+// in one style object triggers React's conflicting-style warning
+const tabButtonStyle = (active: boolean, activeColor = 'var(--accent-primary)'): CSSProperties => ({
+  display: 'flex', alignItems: 'center', gap: '0.5rem',
+  color: active ? 'var(--text-primary)' : 'var(--text-tertiary)',
+  background: 'none', padding: '0.5rem 1rem', cursor: 'pointer', fontWeight: 500,
+  borderTop: 'none', borderLeft: 'none', borderRight: 'none',
+  borderBottom: active ? `2px solid ${activeColor}` : '2px solid transparent'
+});
 
 function App() {
   const {
@@ -145,13 +155,7 @@ function App() {
             <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
               <button
                 onClick={() => setCurrentView('incentives')}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '0.5rem',
-                  borderBottom: '2px solid #10B981',
-                  color: 'var(--text-primary)',
-                  background: 'none', border: 'none', padding: '0.5rem 1rem', cursor: 'pointer', fontWeight: 500,
-                  borderBottomStyle: 'solid', borderBottomWidth: '2px', borderBottomColor: '#10B981'
-                }}
+                style={tabButtonStyle(true, '#10B981')}
               >
                 <TrendingUp size={18} /> Incentives &amp; Earnings
               </button>
@@ -166,56 +170,31 @@ function App() {
               <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
                 <button
                   onClick={() => setCurrentView('dashboard')}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '0.5rem',
-                    borderBottom: currentView === 'dashboard' ? '2px solid var(--accent-primary)' : '2px solid transparent',
-                    color: currentView === 'dashboard' ? 'var(--text-primary)' : 'var(--text-tertiary)',
-                    background: 'none', border: 'none', padding: '0.5rem 1rem', cursor: 'pointer', fontWeight: 500
-                  }}
+                  style={tabButtonStyle(currentView === 'dashboard')}
                 >
                   <BarChart3 size={18} /> Overview
                 </button>
                 <button
                   onClick={() => setCurrentView('azure')}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '0.5rem',
-                    borderBottom: currentView === 'azure' ? '2px solid var(--accent-primary)' : '2px solid transparent',
-                    color: currentView === 'azure' ? 'var(--text-primary)' : 'var(--text-tertiary)',
-                    background: 'none', border: 'none', padding: '0.5rem 1rem', cursor: 'pointer', fontWeight: 500
-                  }}
+                  style={tabButtonStyle(currentView === 'azure')}
                 >
                   <Cloud size={18} /> Azure FinOps
                 </button>
                 <button
                   onClick={() => setCurrentView('nce')}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '0.5rem',
-                    borderBottom: currentView === 'nce' ? '2px solid var(--accent-primary)' : '2px solid transparent',
-                    color: currentView === 'nce' ? 'var(--text-primary)' : 'var(--text-tertiary)',
-                    background: 'none', border: 'none', padding: '0.5rem 1rem', cursor: 'pointer', fontWeight: 500
-                  }}
+                  style={tabButtonStyle(currentView === 'nce')}
                 >
                   <ShieldCheck size={18} /> NCE Insights
                 </button>
                 <button
                   onClick={() => setCurrentView('renewals')}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '0.5rem',
-                    borderBottom: currentView === 'renewals' ? '2px solid var(--accent-primary)' : '2px solid transparent',
-                    color: currentView === 'renewals' ? 'var(--text-primary)' : 'var(--text-tertiary)',
-                    background: 'none', border: 'none', padding: '0.5rem 1rem', cursor: 'pointer', fontWeight: 500
-                  }}
+                  style={tabButtonStyle(currentView === 'renewals')}
                 >
                   <CalendarDays size={18} /> Renewal Calendar
                 </button>
                 <button
                   onClick={() => setCurrentView('timeline')}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '0.5rem',
-                    borderBottom: currentView === 'timeline' ? '2px solid var(--accent-primary)' : '2px solid transparent',
-                    color: currentView === 'timeline' ? 'var(--text-primary)' : 'var(--text-tertiary)',
-                    background: 'none', border: 'none', padding: '0.5rem 1rem', cursor: 'pointer', fontWeight: 500
-                  }}
+                  style={tabButtonStyle(currentView === 'timeline')}
                 >
                   <LineChart size={18} /> Cost Timeline
                 </button>
