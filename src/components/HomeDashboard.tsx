@@ -4,6 +4,7 @@ import { useBillingStore } from '../store/billingStore';
 import { useSnapshotStore } from '../store/snapshotStore';
 import { usePricingStore } from '../store/pricingStore';
 import { useEarningsStore } from '../store/earningsStore';
+import { formatCurrencyShort } from '../utils/format';
 
 interface HomeDashboardProps {
     onNavigate: (view: 'billing' | 'pricing' | 'incentives') => void;
@@ -108,7 +109,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                             <div>
                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>Revenue</div>
                                 <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                                    {billingMeta.currency === 'MIXED' ? 'Multiple currencies' : new Intl.NumberFormat('nl-NL', { style: 'currency', currency: billingMeta.currency || 'EUR', maximumFractionDigits: 0 }).format(billingMeta.totalAmount)}
+                                    {billingMeta.currency === 'MIXED' ? 'Multiple currencies' : formatCurrencyShort(billingMeta.totalAmount, billingMeta.currency || 'EUR')}
                                 </div>
                             </div>
                             <div>
@@ -209,7 +210,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                             <div>
                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>Earnings</div>
                                 <div style={{ fontWeight: 600, color: '#10B981' }}>
-                                    {earningsMeta.currency === 'MIXED' ? 'Multiple currencies' : new Intl.NumberFormat('nl-NL', { style: 'currency', currency: earningsMeta.currency || 'EUR', maximumFractionDigits: 0 }).format(earningsMeta.totalEarningAmount)}
+                                    {earningsMeta.currency === 'MIXED' ? 'Multiple currencies' : formatCurrencyShort(earningsMeta.totalEarningAmount, earningsMeta.currency || 'EUR')}
                                 </div>
                             </div>
                             <div>

@@ -2,6 +2,7 @@ import React, { lazy, Suspense, useMemo, useState } from 'react';
 import type { BillingRecord } from '../types/BillingData';
 import { ChevronDown, ChevronRight, FileText, ArrowUp, ArrowDown } from 'lucide-react';
 import { calculateSellPrice } from '../utils/pricing';
+import { formatCurrency } from '../utils/format';
 
 // Lazy: keeps @react-pdf/renderer out of the initial bundle
 const InvoicePreview = lazy(() => import('./InvoicePreview').then(m => ({ default: m.InvoicePreview })));
@@ -152,9 +153,6 @@ export const RebillingTable: React.FC<RebillingTableProps> = ({ rows, marginPerc
         setExpandedItems(next);
     };
 
-    const formatCurrency = (val: number, currency: string = 'EUR') => {
-        return new Intl.NumberFormat('nl-NL', { style: 'currency', currency }).format(val);
-    };
 
     return (
         <div className="glass-panel" style={{ overflow: 'hidden' }}>

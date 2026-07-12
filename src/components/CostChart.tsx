@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import type { BillingRecord } from '../types/BillingData';
+import { formatCurrencyShort as formatCurrency } from '../utils/format';
 import './CostChart.css';
 
 interface CostChartProps {
@@ -24,10 +25,6 @@ export const CostChart: React.FC<CostChartProps> = ({ data }) => {
             .sort((a, b) => b.value - a.value)
             .slice(0, 10); // Top 10
     }, [data, groupBy]);
-
-    const formatCurrency = (val: number) => {
-        return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0 }).format(val);
-    };
 
     return (
         <div className="chart-container glass-panel">

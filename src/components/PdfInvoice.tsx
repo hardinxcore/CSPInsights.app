@@ -1,5 +1,6 @@
 import React from 'react';
 import { Page, Text, View, Document, StyleSheet, Image } from '@react-pdf/renderer';
+import { formatCurrency as formatCurrencyShared } from '../utils/format';
 
 const styles = StyleSheet.create({
     page: { padding: 40, fontFamily: 'Helvetica', fontSize: 10, color: '#5B6770' }, // Brand Grey
@@ -49,9 +50,7 @@ interface PdfInvoiceProps {
 export const PdfInvoice: React.FC<PdfInvoiceProps> = ({
     customerName, customerId, items, totalAmount, currency, companyDetails
 }) => {
-    const formatCurrency = (val: number) => {
-        return new Intl.NumberFormat('nl-NL', { style: 'currency', currency }).format(val);
-    };
+    const formatCurrency = (val: number) => formatCurrencyShared(val, currency);
 
     return (
         <Document>

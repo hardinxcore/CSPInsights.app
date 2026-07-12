@@ -16,6 +16,7 @@ import { useBillingStore } from '../store/billingStore';
 
 import { calculateSellPrice } from '../utils/pricing';
 import { exportToXlsx } from '../utils/exportXlsx';
+import { formatCurrency } from '../utils/format';
 import './Dashboard.css';
 
 interface DashboardProps {
@@ -403,9 +404,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, onReset, onClearData
         exportToXlsx(dataToExport, "Billing Data", `PartnerCenter_Export_${new Date().toISOString().slice(0, 10)}.xlsx`);
     };
 
-    const formatCurrency = (val: number) => {
-        return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(val);
-    };
 
     const SortIcon = ({ column }: { column: SortKey }) => {
         if (sortConfig?.key !== column) return <ArrowUpDown size={14} style={{ marginLeft: 6, opacity: 0.3 }} />;

@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Cloud, Server, Activity, X, User, ChevronDown, ChevronRight, Filter, ArrowLeft, ExternalLink } from 'lucide-react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useBillingStore } from '../store/billingStore';
+import { formatCurrency } from '../utils/format';
 import type { BillingRecord } from '../types/BillingData';
 
 const COLORS = ['#0078D4', '#50E6FF', '#004578', '#B3B0AD', '#F2F2F2', '#0078D4', '#50E6FF', '#004578', '#B3B0AD'];
@@ -11,7 +12,6 @@ const AzureResourceDetail: React.FC<{
     rows: BillingRecord[];
     onBack: () => void;
 }> = ({ resourceName, rows, onBack }) => {
-    const formatCurrency = (val: number) => new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(val);
 
     const stats = useMemo(() => {
         const byCustomer: Record<string, number> = {};
@@ -301,7 +301,6 @@ export const AzureAnalyzer: React.FC = () => {
     }, [filteredStats.rows]);
 
 
-    const formatCurrency = (val: number) => new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(val);
 
     // Helpers for Badge UI
     const FilterBadge = ({ label, value, onClear, icon: Icon }: any) => (

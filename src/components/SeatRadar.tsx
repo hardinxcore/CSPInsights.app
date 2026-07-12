@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import type { BillingRecord } from '../types/BillingData';
 import { ArrowUpRight, TrendingUp, AlertTriangle } from 'lucide-react';
+import { formatCurrency } from '../utils/format';
 
 interface SeatRadarProps {
     currentData: BillingRecord[];
@@ -115,7 +116,6 @@ export const SeatRadar: React.FC<SeatRadarProps> = ({ currentData, previousData,
 
     }, [currentData, previousData]);
 
-    const formatCurrency = (val: number) => new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(val);
 
     return (
         <div className="animate-fade-in" style={{ marginBottom: '2rem' }}>

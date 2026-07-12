@@ -13,6 +13,7 @@ import { cancelEarningsParse, parseEarningsCSVs } from '../utils/earningsParser'
 import { cancelPaymentsParse, parsePaymentsCSV } from '../utils/paymentsParser';
 import { FileDropZone } from './FileDropZone';
 import { exportToXlsx } from '../utils/exportXlsx';
+import { formatCurrency, formatCurrencyShort } from '../utils/format';
 import type { EarningRecord, PaymentRecord } from '../types/EarningsData';
 
 type TabType = 'overview' | 'customers' | 'products' | 'records' | 'payments';
@@ -42,10 +43,8 @@ const tooltipStyle = {
     cursor: { fill: 'var(--bg-tertiary)' },
 };
 
-const fmt = (amount: number, currency: string) =>
-    new Intl.NumberFormat('nl-NL', { style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
-const fmtShort = (amount: number, currency: string) =>
-    new Intl.NumberFormat('nl-NL', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount);
+const fmt = formatCurrency;
+const fmtShort = formatCurrencyShort;
 const truncate = (str: string, max: number) =>
     str && str.length > max ? str.slice(0, max) + '…' : (str || '');
 

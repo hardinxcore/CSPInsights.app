@@ -3,6 +3,7 @@ import type { BillingRecord } from '../types/BillingData';
 import { Loader2, TrendingUp, Package, Users, Calendar, Check, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { useSnapshotStore } from '../store/snapshotStore';
 import { loadSnapshot } from '../utils/db';
+import { formatCurrency } from '../utils/format';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area, Legend } from 'recharts';
 import { SeatRadar } from './SeatRadar';
 
@@ -268,9 +269,6 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ currentData }) =
         return { risers, fallers, periodLabel: `${previous.name} → ${current.name}` };
     }, [normalizedDatasets, analysisMode]);
 
-    const formatCurrency = (val: number) => {
-        return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(val);
-    };
 
     const COLORS = ['#0078D4', '#E3008C', '#00B294', '#FFB900', '#F7630C', '#8764B8'];
 

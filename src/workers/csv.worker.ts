@@ -1,5 +1,6 @@
 import Papa from 'papaparse';
 import { BillingRecordSchema } from '../types/schemas';
+import { billableDaysBetween } from '../utils/parseDate';
 
 const EXPECTED_COLUMNS = ['PartnerId', 'CustomerId', 'ProductId', 'SkuId'];
 let cancelled = false;
@@ -66,19 +67,7 @@ self.onmessage = async (e: MessageEvent) => {
                                     Quantity: row.Quantity || row.BillableQuantity,
                                     SourceFile: file.name,
                                     IsUnbilled: !row.InvoiceNumber && (file.name.toLowerCase().includes('unbilled') || !!row.ChargeType),
-                                    BillableDays: (() => {
-                                        if (row.ChargeStartDate && row.ChargeEndDate) {
-                                            const start = new Date(row.ChargeStartDate);
-                                            const end = new Date(row.ChargeEndDate);
-                                            // Calculate check if valid dates
-                                            if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
-                                                const diffTime = Math.abs(end.getTime() - start.getTime());
-                                                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end date
-                                                return diffDays;
-                                            }
-                                        }
-                                        return 0;
-                                    })()
+                                    BillableDays: billableDaysBetween(row.ChargeStartDate, row.ChargeEndDate)
                                 };
 
                                 // Validate with Zod

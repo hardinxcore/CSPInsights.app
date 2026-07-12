@@ -6,6 +6,7 @@ import { CartModal } from './CartModal';
 import { Search, Filter, RefreshCw, Star, FileUp, FileMinus, Calculator, History, Download, ShoppingCart, Copy, Check, X } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { exportPricingToExcel } from '../utils/excelExport';
+import { formatCurrency } from '../utils/format';
 
 export const PricingView: React.FC = () => {
     const {
@@ -159,13 +160,6 @@ export const PricingView: React.FC = () => {
         measureElement: (element) => element?.getBoundingClientRect().height
     });
 
-    const formatCurrency = (val: number, curr: string) => {
-        try {
-            return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: curr || 'EUR' }).format(val);
-        } catch {
-            return `${val} ${curr}`;
-        }
-    };
 
     const handleCompareUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
@@ -450,7 +444,7 @@ export const PricingView: React.FC = () => {
                                 <ShoppingCart size={20} />
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1 }}>
                                     <span style={{ fontSize: '0.75rem', fontWeight: 500, opacity: 0.9 }}>{showMargins ? "Sales Total" : "Total"}</span>
-                                    <span style={{ fontSize: '1rem' }}>{new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(cartTotal.total)}</span>
+                                    <span style={{ fontSize: '1rem' }}>{formatCurrency(cartTotal.total)}</span>
                                 </div>
                             </button>
                             <button

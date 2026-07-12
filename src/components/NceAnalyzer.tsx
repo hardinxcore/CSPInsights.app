@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 
 import { useBillingStore } from '../store/billingStore';
+import { formatCurrency } from '../utils/format';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 import { AlertTriangle, Calendar, CheckCircle, Filter, X } from 'lucide-react';
 
@@ -231,7 +232,7 @@ export const NceAnalyzer: React.FC = () => {
                                     ))}
                                 </Pie>
                                 <RechartsTooltip
-                                    formatter={(value: number | undefined) => new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(value || 0)}
+                                    formatter={(value: number | undefined) => formatCurrency(value || 0)}
                                     contentStyle={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}
                                 />
                                 <Legend
@@ -349,13 +350,13 @@ export const NceAnalyzer: React.FC = () => {
                                                                 <h4 style={{ marginTop: 0, marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Billing & Quantity</h4>
                                                                 <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '0.5rem 1rem' }}>
                                                                     <span style={{ color: 'var(--text-tertiary)' }}>Unit Price:</span>
-                                                                    <span style={{ fontFamily: 'monospace' }}>{new Intl.NumberFormat('nl-NL', { style: 'currency', currency: r.originalRow.Currency || 'EUR' }).format(r.originalRow.UnitPrice)}</span>
+                                                                    <span style={{ fontFamily: 'monospace' }}>{formatCurrency(r.originalRow.UnitPrice, r.originalRow.Currency)}</span>
 
                                                                     <span style={{ color: 'var(--text-tertiary)' }}>Quantity:</span>
                                                                     <span>{r.originalRow.Quantity}</span>
 
                                                                     <span style={{ color: 'var(--text-tertiary)' }}>Total:</span>
-                                                                    <span style={{ fontWeight: 600 }}>{new Intl.NumberFormat('nl-NL', { style: 'currency', currency: r.originalRow.Currency || 'EUR' }).format(r.cost)}</span>
+                                                                    <span style={{ fontWeight: 600 }}>{formatCurrency(r.cost, r.originalRow.Currency)}</span>
 
                                                                     <span style={{ color: 'var(--text-tertiary)' }}>Charge Type:</span>
                                                                     <span>{r.originalRow.ChargeType || '-'}</span>

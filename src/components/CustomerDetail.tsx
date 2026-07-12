@@ -3,6 +3,7 @@ import { ArrowLeft, PieChart, TrendingUp, Globe, MapPin, Tag, Plus, X, Search, F
 // Lazy: keeps @react-pdf/renderer out of the initial bundle
 const InvoicePreview = lazy(() => import('./InvoicePreview').then(m => ({ default: m.InvoicePreview })));
 import { exportToXlsx } from '../utils/exportXlsx';
+import { formatCurrency } from '../utils/format';
 import type { BillingRecord } from '../types/BillingData';
 import { useBillingStore } from '../store/billingStore';
 import { calculateSellPrice } from '../utils/pricing';
@@ -231,18 +232,18 @@ export const CustomerDetail: React.FC<CustomerDetailProps> = ({ customerName, ro
             <div className="dashboard-grid" style={{ marginBottom: '2rem' }}>
                 <div className="stat-card">
                     <div className="stat-label">Total Cost</div>
-                    <div className="stat-value">{new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(stats.totalCost)}</div>
+                    <div className="stat-value">{formatCurrency(stats.totalCost)}</div>
                 </div>
                 <div className="stat-card" style={{ borderLeftColor: 'var(--success)' }}>
                     <div className="stat-label">Total Revenue</div>
                     <div className="stat-value" style={{ color: 'var(--success)' }}>
-                        {new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(stats.totalRevenue)}
+                        {formatCurrency(stats.totalRevenue)}
                     </div>
                 </div>
                 <div className="stat-card" style={{ borderLeftColor: 'var(--accent-secondary)' }}>
                     <div className="stat-label">Total Margin</div>
                     <div className="stat-value" style={{ color: 'var(--accent-secondary)' }}>
-                        {new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(marginAmt)}
+                        {formatCurrency(marginAmt)}
                         <span style={{ fontSize: '1rem', marginLeft: '0.5rem', color: 'var(--text-tertiary)' }}>({marginPct.toFixed(1)}%)</span>
                     </div>
                 </div>
@@ -260,7 +261,7 @@ export const CustomerDetail: React.FC<CustomerDetailProps> = ({ customerName, ro
                                 <div style={{ flex: 1 }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem', fontSize: '0.9rem' }}>
                                         <span style={{ fontWeight: 500 }}>{prod.name}</span>
-                                        <span>{new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(prod.cost)}</span>
+                                        <span>{formatCurrency(prod.cost)}</span>
                                     </div>
                                     <div style={{ width: '100%', height: '8px', background: 'var(--bg-tertiary)', borderRadius: '4px', overflow: 'hidden' }}>
                                         <div style={{
@@ -287,7 +288,7 @@ export const CustomerDetail: React.FC<CustomerDetailProps> = ({ customerName, ro
                             .map(([cat, amount], i) => (
                                 <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', borderBottom: '1px solid var(--border-color)' }}>
                                     <span style={{ fontWeight: 500 }}>{cat}</span>
-                                    <span style={{ fontFamily: 'monospace' }}>{new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(amount)}</span>
+                                    <span style={{ fontFamily: 'monospace' }}>{formatCurrency(amount)}</span>
                                 </div>
                             ))}
                     </div>
@@ -343,10 +344,10 @@ export const CustomerDetail: React.FC<CustomerDetailProps> = ({ customerName, ro
                                     <td style={{ padding: '0.75rem', maxWidth: '300px' }} className="truncate" title={r.ProductName}>{r.ProductName}</td>
                                     <td style={{ padding: '0.75rem', textAlign: 'right' }}>{r.Quantity}</td>
                                     <td style={{ padding: '0.75rem', textAlign: 'right', fontFamily: 'monospace' }}>
-                                        {new Intl.NumberFormat('nl-NL', { style: 'currency', currency: r.Currency || 'EUR' }).format(r.UnitPrice)}
+                                        {formatCurrency(r.UnitPrice, r.Currency)}
                                     </td>
                                     <td style={{ padding: '0.75rem', textAlign: 'right', fontFamily: 'monospace', fontWeight: 600 }}>
-                                        {new Intl.NumberFormat('nl-NL', { style: 'currency', currency: r.Currency || 'EUR' }).format(calculateSellPrice(r, globalMargin, marginRules))}
+                                        {formatCurrency(calculateSellPrice(r, globalMargin, marginRules), r.Currency)}
                                     </td>
                                     <td style={{ padding: '0.75rem' }}>{r.TermAndBillingCycle || '-'}</td>
                                     <td style={{ padding: '0.75rem', fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>

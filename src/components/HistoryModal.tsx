@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, Save, Trash2, RotateCcw, Clock, Edit2, Check } from 'lucide-react';
 import { useSnapshotStore } from '../store/snapshotStore'; // Billing Store
 import { usePricingStore } from '../store/pricingStore'; // Pricing Store
+import { formatCurrency } from '../utils/format';
 
 interface HistoryModalProps {
     onClose: () => void;
@@ -190,7 +191,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({ onClose, mode = 'bil
                                                 </button>
                                             </div>
                                             <div style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', marginTop: '0.25rem' }}>
-                                                {formatDate(snap.updatedAt)} • {snap.meta?.totalRows || 0} rows {snap.meta?.totalAmount ? `• ${new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(snap.meta.totalAmount)}` : ''}
+                                                {formatDate(snap.updatedAt)} • {snap.meta?.totalRows || 0} rows {snap.meta?.totalAmount ? `• ${formatCurrency(snap.meta.totalAmount)}` : ''}
                                             </div>
                                         </div>
                                     )}

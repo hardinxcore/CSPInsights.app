@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import type { BillingRecord } from '../types/BillingData';
+import { formatCurrency } from '../utils/format';
 
 // Brand Palette: Orange (#FE5000), Turquoise (#00B5E2), Grey (#5B6770), Light Grey (#AAB4BA)
 const COLORS = ['#FE5000', '#00B5E2', '#5B6770', '#AAB4BA', '#F0F0F0', '#E5F6FD'];
@@ -106,7 +107,7 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({ data, onFilter
                         <XAxis type="number" hide />
                         <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 11 }} />
                         <Tooltip
-                            formatter={(val: any) => new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(Number(val))}
+                            formatter={(val: any) => formatCurrency(Number(val))}
                             contentStyle={{ background: 'rgba(255,255,255,0.9)', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
                         />
                         <Bar
@@ -152,7 +153,7 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({ data, onFilter
                             ))}
                         </Pie>
                         <Tooltip
-                            formatter={(val: any) => new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(Number(val))}
+                            formatter={(val: any) => formatCurrency(Number(val))}
                             contentStyle={{ background: 'rgba(255,255,255,0.9)', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
                         />
                         <Legend verticalAlign="bottom" height={36} />

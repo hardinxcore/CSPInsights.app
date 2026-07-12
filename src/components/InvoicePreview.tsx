@@ -4,6 +4,7 @@ import { X, Printer, Download } from 'lucide-react';
 import { useSettingsStore } from '../store/settingsStore';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { PdfInvoice } from './PdfInvoice';
+import { formatCurrency as formatCurrencyShared } from '../utils/format';
 import './InvoicePreview.css';
 
 interface InvoiceItem {
@@ -45,9 +46,7 @@ export const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         window.print();
     };
 
-    const formatCurrency = (val: number) => {
-        return new Intl.NumberFormat('nl-NL', { style: 'currency', currency }).format(val);
-    };
+    const formatCurrency = (val: number) => formatCurrencyShared(val, currency);
 
     const today = new Date().toLocaleDateString('nl-NL', {
         year: 'numeric',

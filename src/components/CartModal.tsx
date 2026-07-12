@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { exportToXlsx } from '../utils/exportXlsx';
+import { formatCurrency } from '../utils/format';
 import { X, Download, ShoppingCart, FileSpreadsheet, FolderOpen, Save, Trash2 } from 'lucide-react';
 import { useCartStore } from '../store/cartStore';
 import { usePricingStore } from '../store/pricingStore';
@@ -42,13 +43,6 @@ export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
 
     const total = cartItems.reduce((sum, item) => sum + (item.qty * item.row.ERPPrice), 0);
 
-    const formatCurrency = (val: number, curr: string) => {
-        try {
-            return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: curr || 'EUR' }).format(val);
-        } catch {
-            return `${val} ${curr}`;
-        }
-    };
 
     const handleExportPDF = async () => {
         const doc = new jsPDF();
