@@ -71,7 +71,7 @@ export const RebillingTable: React.FC<RebillingTableProps> = ({ rows, marginPerc
             if (!groups[custKey]) {
                 groups[custKey] = {
                     customerName: custKey,
-                    customerId: row.CustomerId,
+                    customerId: row.CustomerId || '',
                     totalCost: 0,
                     totalSell: 0,
                     currency: row.Currency || 'EUR',
@@ -87,13 +87,13 @@ export const RebillingTable: React.FC<RebillingTableProps> = ({ rows, marginPerc
             groups[custKey].totalSell += sell;
 
             const item: GroupedItem = {
-                subscriptionId: row.SubscriptionId,
+                subscriptionId: row.SubscriptionId || '',
                 productName: row.ProductName || row.SkuName,
                 quantity: row.Quantity !== 0 ? row.Quantity : (row.ConsumedQuantity || 0),
                 unitCost: row.UnitPrice,
                 totalCost: cost,
                 totalSell: sell,
-                chargeDate: row.ChargeStartDate,
+                chargeDate: row.ChargeStartDate || '',
                 description: `${row.ProductName}${row.ChargeType ? ` (${row.ChargeType})` : ''}`,
                 originalRecord: row
             };

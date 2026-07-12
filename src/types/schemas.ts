@@ -66,6 +66,29 @@ export const BillingRecordSchema = z.object({
 
 export type BillingRecord = z.infer<typeof BillingRecordSchema>;
 
+// Pricing catalog rows had no validation and used raw parseFloat; this
+// schema is the single source of truth for the PriceRow shape.
+export const PriceRowSchema = z.object({
+    ProductTitle: z.string().default('Unknown Product'),
+    ProductId: z.string(),
+    SkuId: z.string(),
+    SkuTitle: z.string().default(''),
+    Publisher: z.string().default(''),
+    SkuDescription: z.string().default(''),
+    UnitOfMeasure: z.string().default(''),
+    TermDuration: z.string().default(''),
+    BillingPlan: z.string().default(''),
+    Market: z.string().default(''),
+    Currency: z.string().default(''),
+    UnitPrice: z.preprocess(numberPreprocess, z.number().default(0)),
+    ERPPrice: z.preprocess(numberPreprocess, z.number().default(0)),
+    EffectiveStartDate: z.string().default(''),
+    Segment: z.string().default(''),
+    Tags: z.string().optional(),
+});
+
+export type PriceRow = z.infer<typeof PriceRowSchema>;
+
 export const BackupSchema = z.object({
   version: z.string().min(1),
   timestamp: z.string().datetime(),
@@ -85,7 +108,7 @@ export const BackupSchema = z.object({
       iban: z.string(),
     }).passthrough(),
     defaultMargin: z.number().finite(),
-    theme: z.enum(['light', 'dark']),
+    theme: z.enum(['system', 'light', 'dark']),
   }),
   pricing: z.object({
     rows: z.array(z.unknown()),

@@ -1,5 +1,5 @@
 import Papa from 'papaparse';
-import { parseMoney } from '../utils/parseNumber';
+import { PriceRowSchema } from '../types/schemas';
 import type { PriceRow } from '../types/PricingData';
 
 // Worker context
@@ -19,35 +19,21 @@ ctx.onmessage = async (e: MessageEvent) => {
             skipEmptyLines: true,
             complete: (results) => {
                 const rows: PriceRow[] = [];
-                // const errors: string[] = []; // Removed unused
 
-                results.data.forEach((row: any) => { // Removed index
-                    // Basic validation: ensure minimal fields
+                results.data.forEach((row: any) => {
+                    // Require the identifying fields; skip empty/malformed rows
                     if (!row['ProductId'] || !row['SkuId']) {
-                        return; // Skip empty or malformed
+                        return;
                     }
 
-                    // Map fields
-                    const newRow: PriceRow = {
-                        ProductTitle: row['ProductTitle'] || 'Unknown Product',
-                        ProductId: row['ProductId'],
-                        SkuId: row['SkuId'],
-                        SkuTitle: row['SkuTitle'] || '',
-                        Publisher: row['Publisher'] || '',
-                        SkuDescription: row['SkuDescription'] || '',
-                        UnitOfMeasure: row['UnitOfMeasure'] || '',
-                        TermDuration: row['TermDuration'] || '',
-                        BillingPlan: row['BillingPlan'] || '',
-                        Market: row['Market'] || '',
-                        Currency: row['Currency'] || '',
-                        UnitPrice: parseMoney(row['UnitPrice']),
-                        ERPPrice: parseMoney(row['ERP Price']),
-                        EffectiveStartDate: row['EffectiveStartDate'] || '',
-                        Segment: row['Segment'] || '',
-                        Tags: row['Tags'] || ''
-                    };
-
-                    rows.push(newRow);
+                    // Validate + coerce via Zod (handles number parsing and defaults)
+                    const parsed = PriceRowSchema.safeParse({
+                        ...row,
+                        ERPPrice: row['ERP Price'],
+                    });
+                    if (parsed.success) {
+                        rows.push(parsed.data);
+                    }
                 });
 
                 ctx.postMessage({

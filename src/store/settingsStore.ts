@@ -20,21 +20,33 @@ const DEFAULT_COMPANY: CompanyDetails = {
     logoUrl: '/microsoft-logo.svg'
 };
 
+export type ThemeMode = 'system' | 'light' | 'dark';
+
+// Applies the effective light/dark class to <body>. When mode is 'system'
+// the OS preference (prefers-color-scheme) decides.
+const prefersDark = () =>
+    typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches;
+
+const applyTheme = (mode: ThemeMode) => {
+    const dark = mode === 'dark' || (mode === 'system' && prefersDark());
+    document.body.classList.toggle('dark-mode', dark);
+};
+
 interface SettingsState {
     companyDetails: CompanyDetails;
     defaultMargin: number;
-    theme: 'light' | 'dark'; // Add theme
+    theme: ThemeMode;
 
     setCompanyDetails: (details: Partial<CompanyDetails>) => void;
     setDefaultMargin: (margin: number) => void;
-    setTheme: (theme: 'light' | 'dark') => void; // Add action
+    setTheme: (theme: ThemeMode) => void;
     loadSettings: () => Promise<void>;
 }
 
 export const useSettingsStore = create<SettingsState>((setState, getState) => ({
     companyDetails: DEFAULT_COMPANY,
     defaultMargin: 20,
-    theme: 'light',
+    theme: 'system',
 
     setCompanyDetails: (details) => {
         const current = getState().companyDetails;
@@ -48,16 +60,10 @@ export const useSettingsStore = create<SettingsState>((setState, getState) => ({
         set('settings-margin', margin).catch(console.error);
     },
 
-    setTheme: (theme: 'light' | 'dark') => {
+    setTheme: (theme: ThemeMode) => {
         setState({ theme });
         set('settings-theme', theme).catch(console.error);
-
-        // update DOM immediately
-        if (theme === 'dark') {
-            document.body.classList.add('dark-mode');
-        } else {
-            document.body.classList.remove('dark-mode');
-        }
+        applyTheme(theme);
     },
 
     loadSettings: async () => {
@@ -66,20 +72,29 @@ export const useSettingsStore = create<SettingsState>((setState, getState) => ({
             const savedMargin = await get('settings-margin');
             const savedTheme = await get('settings-theme');
 
-            // Apply theme on load
-            if (savedTheme === 'dark') {
-                document.body.classList.add('dark-mode');
-            } else {
-                document.body.classList.remove('dark-mode');
-            }
+            // Legacy stored values were only 'light' | 'dark'; anything else
+            // (or nothing) falls back to following the system preference.
+            const theme: ThemeMode = savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'system'
+                ? savedTheme
+                : 'system';
+            applyTheme(theme);
 
             setState({
                 companyDetails: savedCompany ? { ...DEFAULT_COMPANY, ...savedCompany } : DEFAULT_COMPANY,
                 defaultMargin: savedMargin !== undefined ? savedMargin : 20,
-                theme: savedTheme || 'light'
+                theme
             });
         } catch (err) {
             console.error('Failed to load settings', err);
         }
     }
 }));
+
+// Re-apply on OS theme change while the user is in 'system' mode
+if (typeof window !== 'undefined' && window.matchMedia) {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+        if (useSettingsStore.getState().theme === 'system') {
+            applyTheme('system');
+        }
+    });
+}

@@ -257,7 +257,7 @@ export const CostTimeline: React.FC = () => {
         const buckets = new Map<string, MonthBucket>();
         const byMonth = new Map<string, BillingRecord[]>();
         for (const row of data) {
-            const month = parseMonth(row.ChargeStartDate);
+            const month = parseMonth(row.ChargeStartDate || '');
             if (!month) continue;
             if (!buckets.has(month)) {
                 buckets.set(month, { month, label: monthLabel(month), Azure: 0, M365: 0, Dynamics: 0, Marketplace: 0, Other: 0, total: 0 });
@@ -277,7 +277,7 @@ export const CostTimeline: React.FC = () => {
     const { days, recordsByDay } = useMemo(() => {
         const buckets = new Map<string, { day: string; label: string; total: number; records: BillingRecord[] }>();
         for (const row of data) {
-            const day = parseDay(row.ChargeStartDate);
+            const day = parseDay(row.ChargeStartDate || '');
             if (!day) continue;
             if (!buckets.has(day)) {
                 const label = new Date(day).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -344,7 +344,7 @@ export const CostTimeline: React.FC = () => {
         const rows = recordsByMonth.get(selectedMonth) ?? [];
         const buckets = new Map<string, number>();
         for (const row of rows) {
-            const day = parseDay(row.ChargeStartDate);
+            const day = parseDay(row.ChargeStartDate || '');
             if (!day) continue;
             buckets.set(day, (buckets.get(day) ?? 0) + rowValue(row));
         }

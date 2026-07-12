@@ -1,21 +1,7 @@
-export interface PriceRow {
-    ProductTitle: string;
-    ProductId: string;
-    SkuId: string;
-    SkuTitle: string;
-    Publisher: string;
-    SkuDescription: string;
-    UnitOfMeasure: string;
-    TermDuration: string;
-    BillingPlan: string;
-    Market: string;
-    Currency: string;
-    UnitPrice: number;
-    ERPPrice: number; // Mapped from "ERP Price"
-    EffectiveStartDate: string;
-    Segment: string;
-    Tags?: string;
-}
+// Single source of truth lives in schemas.ts (Zod), re-exported here so
+// existing imports from types/PricingData keep working.
+import type { PriceRow } from './schemas';
+export type { PriceRow };
 
 export interface PricingMeta {
     totalRows: number;

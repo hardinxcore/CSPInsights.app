@@ -1,4 +1,5 @@
-import { History, LayoutGrid, Moon, Search, Settings, Sun } from 'lucide-react';
+import { History, LayoutGrid, Monitor, Moon, Search, Settings, Sun } from 'lucide-react';
+import type { ThemeMode } from '../store/settingsStore';
 
 export type AppView = 'home' | 'dashboard' | 'settings' | 'azure' | 'nce' | 'renewals' | 'timeline' | 'pricing' | 'incentives';
 
@@ -6,7 +7,7 @@ interface AppHeaderProps {
   currentView: AppView;
   companyName: string;
   logoUrl?: string;
-  theme: 'light' | 'dark';
+  theme: ThemeMode;
   searchQuery: string;
   onViewChange: (view: AppView) => void;
   onThemeChange: () => void;
@@ -14,7 +15,14 @@ interface AppHeaderProps {
   onHistory: () => void;
 }
 
+const THEME_META: Record<ThemeMode, { icon: typeof Monitor; label: string }> = {
+  system: { icon: Monitor, label: 'Theme: system (click for light)' },
+  light: { icon: Sun, label: 'Theme: light (click for dark)' },
+  dark: { icon: Moon, label: 'Theme: dark (click for system)' },
+};
+
 export const AppHeader = ({ currentView, companyName, logoUrl, theme, searchQuery, onViewChange, onThemeChange, onSearchChange, onHistory }: AppHeaderProps) => {
+  const ThemeIcon = THEME_META[theme].icon;
   const hideSearch = ['home', 'pricing', 'settings', 'incentives', 'renewals', 'timeline'].includes(currentView);
   const showHistory = ['dashboard', 'azure', 'nce', 'renewals', 'timeline', 'pricing', 'incentives'].includes(currentView);
   return <header className="app-header glass-panel">
@@ -31,7 +39,7 @@ export const AppHeader = ({ currentView, companyName, logoUrl, theme, searchQuer
         </div>
       </div>
       <div className="flex-center" style={{ gap: '0.5rem' }}>
-        <button type="button" onClick={onThemeChange} className="secondary-btn" aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'} title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}>{theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}</button>
+        <button type="button" onClick={onThemeChange} className="secondary-btn" aria-label={THEME_META[theme].label} title={THEME_META[theme].label}><ThemeIcon size={20} /></button>
         <button type="button" onClick={() => onViewChange('home')} className={`secondary-btn ${currentView === 'home' ? 'active' : ''}`} aria-label="Home" title="Home"><LayoutGrid size={20} /></button>
         {showHistory && <button type="button" onClick={onHistory} className="secondary-btn" aria-label="History and snapshots" title="History & Snapshots"><History size={20} /></button>}
         <button type="button" onClick={() => onViewChange('settings')} className={`secondary-btn ${currentView === 'settings' ? 'active' : ''}`} aria-label="Settings" title="Settings"><Settings size={20} /></button>

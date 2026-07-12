@@ -136,7 +136,7 @@ function App() {
         />
       )}
 
-      <AppHeader currentView={currentView} companyName={companyDetails.name} logoUrl={companyDetails.logoUrl} theme={theme} searchQuery={searchQuery} onViewChange={setCurrentView} onThemeChange={() => setTheme(theme === 'light' ? 'dark' : 'light')} onSearchChange={setSearchQuery} onHistory={() => setShowHistory(true)} />
+      <AppHeader currentView={currentView} companyName={companyDetails.name} logoUrl={companyDetails.logoUrl} theme={theme} searchQuery={searchQuery} onViewChange={setCurrentView} onThemeChange={() => setTheme(theme === 'system' ? 'light' : theme === 'light' ? 'dark' : 'system')} onSearchChange={setSearchQuery} onHistory={() => setShowHistory(true)} />
 
 
       <main className="container animate-fade-in" style={{ marginTop: '2rem' }}>

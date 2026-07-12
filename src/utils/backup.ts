@@ -1,5 +1,5 @@
 import { useBillingStore } from '../store/billingStore';
-import { useSettingsStore, type CompanyDetails } from '../store/settingsStore';
+import { useSettingsStore, type CompanyDetails, type ThemeMode } from '../store/settingsStore';
 import { usePricingStore } from '../store/pricingStore';
 import { useCartStore } from '../store/cartStore';
 import type { BillingRecord } from '../types/BillingData';
@@ -20,7 +20,7 @@ interface EncodedBackup {
     settings: {
         companyDetails: CompanyDetails;
         defaultMargin: number;
-        theme: 'light' | 'dark';
+        theme: ThemeMode;
     };
     pricing: {
         rows: PriceRow[];
