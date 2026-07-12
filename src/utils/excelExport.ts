@@ -1,7 +1,7 @@
-import * as XLSX from 'xlsx';
 import type { PriceRow } from '../types/PricingData';
 
-export const exportPricingToExcel = (rows: PriceRow[], showMargins: boolean, filename = 'pricing_catalog.xlsx') => {
+export const exportPricingToExcel = async (rows: PriceRow[], showMargins: boolean, filename = 'pricing_catalog.xlsx') => {
+    const XLSX = await import('xlsx');
     const data = rows.map(row => {
         const margin = row.ERPPrice - row.UnitPrice;
         const marginPercent = row.ERPPrice > 0 ? (margin / row.ERPPrice) : 0;

@@ -12,7 +12,7 @@ import { useEarningsStore } from '../store/earningsStore';
 import { cancelEarningsParse, parseEarningsCSVs } from '../utils/earningsParser';
 import { cancelPaymentsParse, parsePaymentsCSV } from '../utils/paymentsParser';
 import { FileDropZone } from './FileDropZone';
-import * as XLSX from 'xlsx';
+import { exportToXlsx } from '../utils/exportXlsx';
 import type { EarningRecord, PaymentRecord } from '../types/EarningsData';
 
 type TabType = 'overview' | 'customers' | 'products' | 'records' | 'payments';
@@ -431,6 +431,12 @@ export const EarningsView: React.FC = () => {
         });
     }, [earningsByCustomer, custSort]);
 
+    // Memoized: this used to be sorted inline in the chart JSX on every render
+    const topCustomers = useMemo(
+        () => [...earningsByCustomer].sort((a, b) => b.amount - a.amount).slice(0, 10),
+        [earningsByCustomer]
+    );
+
     const earningsByProduct = useMemo(() => {
         const map = new Map<string, { amount: number; records: number; lever: string; customers: Set<string> }>();
         data.forEach(r => {
@@ -568,10 +574,7 @@ export const EarningsView: React.FC = () => {
             'Payment Date': r.paymentDate ? new Date(r.paymentDate).toLocaleDateString('nl-NL') : '',
             'Reference': r.ciReferenceNumber || '',
         }));
-        const ws = XLSX.utils.json_to_sheet(rows);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Payments');
-        XLSX.writeFile(wb, `payments-${new Date().toISOString().slice(0, 10)}.xlsx`);
+        exportToXlsx(rows, 'Payments', `payments-${new Date().toISOString().slice(0, 10)}.xlsx`);
     };
 
     const handleExportExcel = () => {
@@ -599,10 +602,7 @@ export const EarningsView: React.FC = () => {
             'Program': r.programName,
             'Engagement': r.engagementName,
         }));
-        const ws = XLSX.utils.json_to_sheet(rows);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Earnings');
-        XLSX.writeFile(wb, `earnings-${new Date().toISOString().slice(0, 10)}.xlsx`);
+        exportToXlsx(rows, 'Earnings', `earnings-${new Date().toISOString().slice(0, 10)}.xlsx`);
     };
 
     const handleLeverBarClick = (entry: any) => {
@@ -638,6 +638,13 @@ export const EarningsView: React.FC = () => {
         if (method.toLowerCase().includes('lrdcredit')) return <Receipt size={14} style={{ flexShrink: 0 }} />;
         return <CreditCard size={14} style={{ flexShrink: 0 }} />;
     };
+
+    // Memoized: this used to be copied + sorted inline in the table JSX on
+    // every render (including row hovers)
+    const paymentsSorted = useMemo(
+        () => [...payments].sort((a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime()),
+        [payments]
+    );
 
     const paymentsByMonth = useMemo(() => {
         const map = new Map<string, { earned: number; totalPayment: number; tax: number }>();
@@ -872,7 +879,7 @@ export const EarningsView: React.FC = () => {
                             <p style={{ margin: '0 0 1.25rem', fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>Click a bar for customer details</p>
                             <ResponsiveContainer width="100%" height={230}>
                                 <BarChart
-                                    data={[...earningsByCustomer].sort((a, b) => b.amount - a.amount).slice(0, 10)}
+                                    data={topCustomers}
                                     margin={{ left: 10, right: 20, top: 4, bottom: 65 }}
                                 >
                                     <CartesianGrid {...gridStyle} />
@@ -880,7 +887,7 @@ export const EarningsView: React.FC = () => {
                                     <YAxis tickFormatter={v => fmtShort(v, currency)} tick={axisStyle} width={70} />
                                     <Tooltip formatter={(v: any) => [fmt(v, currency), 'Earnings']} {...tooltipStyle} />
                                     <Bar dataKey="amount" radius={[4, 4, 0, 0]} cursor="pointer" onClick={handleCustomerBarClick}>
-                                        {earningsByCustomer.slice(0, 10).map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+                                        {topCustomers.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
@@ -1161,9 +1168,7 @@ export const EarningsView: React.FC = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {[...payments]
-                                            .sort((a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime())
-                                            .map((r: PaymentRecord) => (
+                                        {paymentsSorted.map((r: PaymentRecord) => (
                                                 <tr key={r.paymentId}
                                                     onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
                                                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}

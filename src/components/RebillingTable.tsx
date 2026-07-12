@@ -1,8 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { lazy, Suspense, useMemo, useState } from 'react';
 import type { BillingRecord } from '../types/BillingData';
 import { ChevronDown, ChevronRight, FileText, ArrowUp, ArrowDown } from 'lucide-react';
-import { InvoicePreview } from './InvoicePreview';
 import { calculateSellPrice } from '../utils/pricing';
+
+// Lazy: keeps @react-pdf/renderer out of the initial bundle
+const InvoicePreview = lazy(() => import('./InvoicePreview').then(m => ({ default: m.InvoicePreview })));
 
 interface RebillingTableProps {
     rows: BillingRecord[];
@@ -52,26 +54,15 @@ export const RebillingTable: React.FC<RebillingTableProps> = ({ rows, marginPerc
         }));
     };
 
-    const getSortedItems = (items: GroupedItem[]) => {
-        if (!sortConfig.key) return items;
-
-        return [...items].sort((a, b) => {
-            const aVal = a[sortConfig.key!];
-            const bVal = b[sortConfig.key!];
-
-            if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
-            if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
-            return 0;
-        });
-    };
-
     // Helper to render sort arrow
     const SortIcon = ({ active, direction }: { active: boolean, direction: 'asc' | 'desc' }) => {
         if (!active) return <div style={{ width: '16px', display: 'inline-block' }} />;
         return direction === 'asc' ? <ArrowUp size={14} style={{ display: 'inline-block' }} /> : <ArrowDown size={14} style={{ display: 'inline-block' }} />;
     };
 
-    const groupedData = useMemo(() => {
+    // Grouping is O(rows) and must not re-run on sort clicks — only when the
+    // data or margin configuration actually changes.
+    const grouped = useMemo(() => {
         const groups: Record<string, GroupedCustomer> = {};
 
         rows.forEach(row => {
@@ -109,7 +100,11 @@ export const RebillingTable: React.FC<RebillingTableProps> = ({ rows, marginPerc
             groups[custKey].items.push(item);
         });
 
-        return Object.values(groups).sort((a, b) => {
+        return Object.values(groups);
+    }, [rows, marginPercent, marginRules]);
+
+    const groupedData = useMemo(() => {
+        return [...grouped].sort((a, b) => {
             const aVal = a[customerSortConfig.key];
             const bVal = b[customerSortConfig.key];
 
@@ -117,7 +112,28 @@ export const RebillingTable: React.FC<RebillingTableProps> = ({ rows, marginPerc
             if (aVal > bVal) return customerSortConfig.direction === 'asc' ? 1 : -1;
             return 0;
         });
-    }, [rows, marginPercent, marginRules, customerSortConfig]);
+    }, [grouped, customerSortConfig]);
+
+    // Pre-sort items per customer once per data/sort change instead of on
+    // every render pass (this used to run for every customer on each render)
+    const sortedItemsByCustomer = useMemo(() => {
+        const map = new Map<string, GroupedItem[]>();
+        groupedData.forEach(group => {
+            if (!sortConfig.key) {
+                map.set(group.customerName, group.items);
+                return;
+            }
+            map.set(group.customerName, [...group.items].sort((a, b) => {
+                const aVal = a[sortConfig.key!];
+                const bVal = b[sortConfig.key!];
+
+                if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+                if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+                return 0;
+            }));
+        });
+        return map;
+    }, [groupedData, sortConfig]);
 
     const toggleExpand = (customerName: string) => {
         const next = new Set(expandedCustomers);
@@ -243,7 +259,7 @@ export const RebillingTable: React.FC<RebillingTableProps> = ({ rows, marginPerc
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {getSortedItems(group.items).map((item, idx) => {
+                                                {(sortedItemsByCustomer.get(group.customerName) ?? group.items).map((item, idx) => {
                                                     const uniqueKey = `${item.subscriptionId}-${idx}`;
                                                     return (
                                                         <React.Fragment key={uniqueKey}>
@@ -332,6 +348,7 @@ export const RebillingTable: React.FC<RebillingTableProps> = ({ rows, marginPerc
 
             {/* Print Modal */}
             {selectedInvoice && (
+                <Suspense fallback={null}>
                 <InvoicePreview
                     customerName={selectedInvoice.customerName}
                     customerId={selectedInvoice.customerId}
@@ -346,6 +363,7 @@ export const RebillingTable: React.FC<RebillingTableProps> = ({ rows, marginPerc
                     }))}
                     onClose={() => setSelectedInvoice(null)}
                 />
+                </Suspense>
             )}
         </div>
     );

@@ -7,14 +7,15 @@ import { RebillingTable } from './RebillingTable';
 import { FilterPanel } from './FilterPanel';
 import { MarginManager } from './MarginManager';
 import { ComparisonView } from './ComparisonView';
-import { InvoicePreview } from './InvoicePreview';
 import { CustomerDetail } from './CustomerDetail';
 const AzureAnalyzer = lazy(() => import('./AzureAnalyzer').then(m => ({ default: m.AzureAnalyzer })));
+// Lazy: keeps @react-pdf/renderer out of the initial bundle
+const InvoicePreview = lazy(() => import('./InvoicePreview').then(m => ({ default: m.InvoicePreview })));
 
 import { useBillingStore } from '../store/billingStore';
 
 import { calculateSellPrice } from '../utils/pricing';
-import * as XLSX from 'xlsx'; // Assuming we will install this, or use Papa for now. Plan said install xlsx.
+import { exportToXlsx } from '../utils/exportXlsx';
 import './Dashboard.css';
 
 interface DashboardProps {
@@ -118,10 +119,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, onReset, onClearData
             CalculatedSellPrice: calculateSellPrice(r, globalMargin, marginRules)
         }));
 
-        const ws = XLSX.utils.json_to_sheet(selectedData);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Selected Data");
-        XLSX.writeFile(wb, `Bulk_Export_${new Date().toISOString().slice(0, 10)}.xlsx`);
+        exportToXlsx(selectedData, "Selected Data", `Bulk_Export_${new Date().toISOString().slice(0, 10)}.xlsx`);
     };
 
 
@@ -402,11 +400,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, onReset, onClearData
             CalculatedSellPrice: calculateSellPrice(r, globalMargin, marginRules)
         }));
 
-        // Excel Export
-        const ws = XLSX.utils.json_to_sheet(dataToExport);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Billing Data");
-        XLSX.writeFile(wb, `PartnerCenter_Export_${new Date().toISOString().slice(0, 10)}.xlsx`);
+        exportToXlsx(dataToExport, "Billing Data", `PartnerCenter_Export_${new Date().toISOString().slice(0, 10)}.xlsx`);
     };
 
     const formatCurrency = (val: number) => {
@@ -465,14 +459,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ data, onReset, onClearData
 
             {/* Invoice Preview Modal */}
             {invoiceData && (
-                <InvoicePreview
-                    customerName={invoiceData.customerName}
-                    customerId={invoiceData.customerId}
-                    items={invoiceData.items}
-                    totalAmount={invoiceData.totalAmount}
-                    currency={invoiceData.currency}
-                    onClose={() => setInvoiceData(null)}
-                />
+                <Suspense fallback={null}>
+                    <InvoicePreview
+                        customerName={invoiceData.customerName}
+                        customerId={invoiceData.customerId}
+                        items={invoiceData.items}
+                        totalAmount={invoiceData.totalAmount}
+                        currency={invoiceData.currency}
+                        onClose={() => setInvoiceData(null)}
+                    />
+                </Suspense>
             )}
 
             {/* Header Controls */}

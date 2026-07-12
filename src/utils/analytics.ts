@@ -58,6 +58,11 @@ export const initAnalytics = async (): Promise<void> => {
     }
 };
 
+export const trackException = (error: Error): void => {
+    if (!import.meta.env.PROD || userOptedOut() || !appInsights) return;
+    appInsights.trackException({ exception: error });
+};
+
 export const trackModuleView = (module: string): void => {
     if (!import.meta.env.PROD || userOptedOut()) return;
     if (!appInsights) {

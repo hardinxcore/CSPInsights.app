@@ -125,10 +125,16 @@ export const PricingView: React.FC = () => {
         }
     };
 
+    // Keyed lookup over all rows is O(n) — build it once per catalog change,
+    // not on every keystroke in a quantity field
+    const rowMap = useMemo(
+        () => new Map(rows.map(r => [`${r.ProductId}-${r.SkuId}-${r.TermDuration}-${r.BillingPlan}-${r.Currency}`, r])),
+        [rows]
+    );
+
     const cartTotal = useMemo(() => {
         let total = 0;
         let count = 0;
-        const rowMap = new Map(rows.map(r => [`${r.ProductId}-${r.SkuId}-${r.TermDuration}-${r.BillingPlan}-${r.Currency}`, r]));
 
         Object.entries(quantities).forEach(([id, qty]) => {
             const row = rowMap.get(id);
@@ -140,7 +146,7 @@ export const PricingView: React.FC = () => {
             }
         });
         return { total, count };
-    }, [quantities, rows]);
+    }, [quantities, rowMap]);
 
 
     // Virtualizer

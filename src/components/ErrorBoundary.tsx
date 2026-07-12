@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { trackException } from '../utils/analytics';
 
 interface ErrorBoundaryProps {
     children: ReactNode;
@@ -18,6 +19,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
     componentDidCatch(error: Error, errorInfo: ErrorInfo) {
         console.error('Unhandled error in view', error, errorInfo);
+        // Anonymous crash reporting; no-op in dev or with DNT/GPC enabled
+        trackException(error);
     }
 
     handleReset = () => {

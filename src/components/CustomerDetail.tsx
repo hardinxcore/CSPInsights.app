@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { lazy, Suspense, useMemo, useState } from 'react';
 import { ArrowLeft, PieChart, TrendingUp, Globe, MapPin, Tag, Plus, X, Search, FileDown, Printer, ArrowUpDown } from 'lucide-react';
-import { InvoicePreview } from './InvoicePreview';
-import * as XLSX from 'xlsx';
+// Lazy: keeps @react-pdf/renderer out of the initial bundle
+const InvoicePreview = lazy(() => import('./InvoicePreview').then(m => ({ default: m.InvoicePreview })));
+import { exportToXlsx } from '../utils/exportXlsx';
 import type { BillingRecord } from '../types/BillingData';
 import { useBillingStore } from '../store/billingStore';
 import { calculateSellPrice } from '../utils/pricing';
@@ -125,10 +126,7 @@ export const CustomerDetail: React.FC<CustomerDetailProps> = ({ customerName, ro
             ...r,
             CalculatedSellPrice: calculateSellPrice(r, globalMargin, marginRules)
         }));
-        const ws = XLSX.utils.json_to_sheet(data);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Transactions");
-        XLSX.writeFile(wb, `${customerName}_Transactions.xlsx`);
+        exportToXlsx(data, "Transactions", `${customerName}_Transactions.xlsx`);
     };
 
     const handleGenerateInvoice = () => {
@@ -370,10 +368,12 @@ export const CustomerDetail: React.FC<CustomerDetailProps> = ({ customerName, ro
 
             {
                 invoiceData && (
-                    <InvoicePreview
-                        {...invoiceData}
-                        onClose={() => setInvoiceData(null)}
-                    />
+                    <Suspense fallback={null}>
+                        <InvoicePreview
+                            {...invoiceData}
+                            onClose={() => setInvoiceData(null)}
+                        />
+                    </Suspense>
                 )
             }
         </div >

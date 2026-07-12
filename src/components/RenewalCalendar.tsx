@@ -3,7 +3,7 @@ import Papa from 'papaparse';
 import { useBillingStore } from '../store/billingStore';
 import type { BillingRecord } from '../types/BillingData';
 import { Calendar, ChevronLeft, ChevronRight, List, Clock, AlertTriangle, TrendingUp, Download, Hourglass, Upload, X } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import { exportToXlsx } from '../utils/exportXlsx';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -449,10 +449,7 @@ export const RenewalCalendar: React.FC = () => {
             'Subscription ID': r.subscriptionId,
             'Order ID': r.orderId ?? '',
         }));
-        const ws = XLSX.utils.json_to_sheet(rows);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Renewals');
-        XLSX.writeFile(wb, `Renewal_Calendar_${dayKey(today)}.xlsx`);
+        exportToXlsx(rows, 'Renewals', `Renewal_Calendar_${dayKey(today)}.xlsx`);
     };
 
     // ── Empty state ────────────────────────────────────────────────────────────

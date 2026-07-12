@@ -2,7 +2,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
+import { exportToXlsx } from '../utils/exportXlsx';
 import { X, Download, ShoppingCart, FileSpreadsheet, FolderOpen, Save, Trash2 } from 'lucide-react';
 import { useCartStore } from '../store/cartStore';
 import { usePricingStore } from '../store/pricingStore';
@@ -186,10 +186,7 @@ export const CartModal: React.FC<CartModalProps> = ({ isOpen, onClose }) => {
             'Currency': item.row.Currency
         }));
 
-        const ws = XLSX.utils.json_to_sheet(data);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Cart");
-        XLSX.writeFile(wb, "quote_export.xlsx");
+        exportToXlsx(data, "Cart", "quote_export.xlsx");
     };
 
     const handleSaveQuote = () => {
