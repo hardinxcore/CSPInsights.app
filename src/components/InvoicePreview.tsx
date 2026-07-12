@@ -2,8 +2,6 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { X, Printer, Download } from 'lucide-react';
 import { useSettingsStore } from '../store/settingsStore';
-import { PDFDownloadLink } from '@react-pdf/renderer';
-import { PdfInvoice } from './PdfInvoice';
 import { formatCurrency as formatCurrencyShared } from '../utils/format';
 import './InvoicePreview.css';
 
@@ -33,6 +31,7 @@ export const InvoicePreview: React.FC<InvoicePreviewProps> = ({
     onClose
 }) => {
     const { companyDetails } = useSettingsStore();
+    const [pdfLoading, setPdfLoading] = React.useState(false);
 
     // Deterministic draft number avoids changing invoice identifiers on rerender.
     const draftNumber = React.useMemo(() => {
@@ -44,6 +43,25 @@ export const InvoicePreview: React.FC<InvoicePreviewProps> = ({
 
     const handlePrint = () => {
         window.print();
+    };
+
+    const handleDownloadPdf = async () => {
+        setPdfLoading(true);
+        try {
+            const [{ pdf }, { PdfInvoice }] = await Promise.all([
+                import('@react-pdf/renderer'),
+                import('./PdfInvoice'),
+            ]);
+            const blob = await pdf(<PdfInvoice customerName={customerName} customerId={customerId} items={items} totalAmount={totalAmount} currency={currency} companyDetails={companyDetails} />).toBlob();
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `Invoice_${customerName.replace(/[^a-z0-9]/gi, '_')}.pdf`;
+            link.click();
+            URL.revokeObjectURL(url);
+        } finally {
+            setPdfLoading(false);
+        }
     };
 
     const formatCurrency = (val: number) => formatCurrencyShared(val, currency);
@@ -63,24 +81,10 @@ export const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                         <Printer size={16} />
                     </button>
 
-                    <PDFDownloadLink
-                        document={<PdfInvoice
-                            customerName={customerName}
-                            customerId={customerId}
-                            items={items}
-                            totalAmount={totalAmount}
-                            currency={currency}
-                            companyDetails={companyDetails}
-                        />}
-                        fileName={`Invoice_${customerName.replace(/[^a-z0-9]/gi, '_')}.pdf`}
-                    >
-                        {({ loading }) => (
-                            <button className="primary-btn" disabled={loading}>
-                                <Download size={16} style={{ marginRight: 8 }} />
-                                {loading ? 'Generating...' : 'Download PDF'}
-                            </button>
-                        )}
-                    </PDFDownloadLink>
+                    <button className="primary-btn" disabled={pdfLoading} onClick={handleDownloadPdf}>
+                        <Download size={16} style={{ marginRight: 8 }} />
+                        {pdfLoading ? 'Generating...' : 'Download PDF'}
+                    </button>
 
                     <button onClick={onClose} className="close-btn" style={{ marginLeft: '1rem' }}>
                         <X size={20} />

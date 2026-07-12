@@ -26,7 +26,7 @@ export default defineConfig([
       // Charting libraries expose callback values as untyped unions. Their
       // adapters are isolated at component boundaries; domain/storage code is
       // checked by TypeScript and Zod instead.
-      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/ban-ts-comment': 'off',
       'react-hooks/preserve-manual-memoization': 'off',
       'react-hooks/static-components': 'off',

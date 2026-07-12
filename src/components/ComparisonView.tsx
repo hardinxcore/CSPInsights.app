@@ -147,8 +147,9 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ currentData }) =
             } catch (err) {
                 console.error(err);
                 alert('Failed to load snapshot');
-                newSet.delete(id); // Revert selection on fail
-                setSelectedSnapshotIds(newSet);
+                const revertedSet = new Set(newSet);
+                revertedSet.delete(id); // Revert selection on fail
+                setSelectedSnapshotIds(revertedSet);
             } finally {
                 setLoading(false);
             }
