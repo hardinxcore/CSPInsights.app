@@ -19,6 +19,8 @@ interface PricingToolbarProps {
     snapshots: SnapshotItem[];
     loadComparisonFromSnapshot: (id: string) => Promise<boolean>;
     priceLists: PriceListCatalogItem[];
+    activePriceListId: string;
+    loadPriceList: (item: PriceListCatalogItem) => Promise<void>;
     loadComparisonPriceList: (item: PriceListCatalogItem) => Promise<void>;
     comparisonLabel: string | null;
     showChangesOnly: boolean;
@@ -55,6 +57,8 @@ export const PricingToolbar: React.FC<PricingToolbarProps> = ({
     snapshots,
     loadComparisonFromSnapshot,
     priceLists,
+    activePriceListId,
+    loadPriceList,
     loadComparisonPriceList,
     comparisonLabel,
     showChangesOnly,
@@ -87,7 +91,21 @@ export const PricingToolbar: React.FC<PricingToolbarProps> = ({
                     }}
                 >
                     <span style={{ color: 'var(--brand-turquoise)', fontWeight: 700 }}>Active price list:</span>
-                    <strong style={{ color: 'var(--text-primary)' }}>{meta.sourceLabel || 'Imported CSV'}</strong>
+                    <strong style={{ color: 'var(--text-primary)' }}>{meta.sourceLabel || 'Select a monthly price list'}</strong>
+                    {priceLists.length > 0 && (
+                        <select
+                            aria-label="Active price list"
+                            value={activePriceListId}
+                            onChange={(event) => {
+                                const item = priceLists.find(priceList => priceList.id === event.target.value);
+                                if (item) void loadPriceList(item);
+                            }}
+                            style={{ marginLeft: '0.35rem', padding: '0.2rem 0.4rem', fontSize: '0.8rem' }}
+                        >
+                            <option value="">Choose month…</option>
+                            {priceLists.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
+                        </select>
+                    )}
                 </div>
             )}
             <div

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { openDB } from 'idb';
 import type { PricingState } from '../types/PricingData';
 import PricingWorker from '../workers/pricing.worker?worker';
+import { parsePriceListFileName } from '../utils/priceListCatalog';
 
 const DB_NAME = 'PartnerCenterPricingDB';
 const STORE_NAME = 'pricing';
@@ -186,13 +187,15 @@ export const usePricingStore = create<PricingState>((set, get) => ({
 
                 if (data) {
                     // Update Store
-                    set({ rows: data, meta });
+                    const source = parsePriceListFileName(file.name);
+                    const enrichedMeta = source ? { ...meta, sourceLabel: source.label, sourceFileName: source.fileName } : meta;
+                    set({ rows: data, meta: enrichedMeta });
 
                     // Persist to IDB
                     try {
                         const db = await getDB();
                         await db.put(STORE_NAME, data, 'rows');
-                        await db.put(STORE_NAME, meta, 'meta');
+                        await db.put(STORE_NAME, enrichedMeta, 'meta');
                     } catch (err) {
                         console.error('Failed to save pricing to DB', err);
                     }

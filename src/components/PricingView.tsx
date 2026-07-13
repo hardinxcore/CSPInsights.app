@@ -12,7 +12,7 @@ import { fetchPriceListArchive } from '../utils/priceListLoader';
 
 export const PricingView: React.FC = () => {
     const {
-        rows, meta, isLoading, loadPricing, clearPricing,
+        rows, meta, isLoading, loadPricing, clearPricing, importPricingArchive,
         favorites, toggleFavorite,
         comparisonRows, isComparing, loadComparison, loadComparisonFromSnapshot, clearComparison,
         loadComparisonArchive, snapshots
@@ -69,6 +69,13 @@ export const PricingView: React.FC = () => {
             setComparisonLabel(null);
         }
     };
+
+    const handleLoadPriceList = async (item: PriceListCatalogItem) => {
+        const archive = await fetchPriceListArchive(item);
+        await importPricingArchive(archive, { label: item.label, fileName: item.fileName });
+    };
+
+    const activePriceListId = priceLists.find(item => item.fileName === meta?.sourceFileName)?.id || '';
 
     // Comparison Map: ProductId-SkuId-Term-Plan-Currency -> Row
     const comparisonMap = useMemo(() => {
@@ -216,6 +223,8 @@ export const PricingView: React.FC = () => {
                 snapshots={snapshots}
                 loadComparisonFromSnapshot={loadComparisonFromSnapshot}
                 priceLists={priceLists}
+                activePriceListId={activePriceListId}
+                loadPriceList={handleLoadPriceList}
                 loadComparisonPriceList={handleLoadComparisonPriceList}
                 comparisonLabel={comparisonLabel}
                 showChangesOnly={showChangesOnly}
