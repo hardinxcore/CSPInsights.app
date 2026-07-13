@@ -22,7 +22,7 @@ export const AvailablePriceLists: React.FC = () => {
         setCatalogError(null);
         try {
             const archive = await fetchPriceListArchive(item);
-            await importPricingArchive(archive);
+            await importPricingArchive(archive, { label: item.label, fileName: item.fileName });
         } catch (error) {
             setCatalogError(error instanceof Error ? error.message : `${item.label} kon niet worden ingeladen.`);
         } finally {

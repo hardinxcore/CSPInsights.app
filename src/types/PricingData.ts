@@ -6,6 +6,8 @@ export type { PriceRow };
 export interface PricingMeta {
     totalRows: number;
     lastUpdated: string; // ISO date
+    sourceLabel?: string;
+    sourceFileName?: string;
 }
 
 export interface SnapshotItem {
@@ -23,6 +25,7 @@ export interface PricingState {
     comparisonRows: PriceRow[];
     isComparing: boolean;
     loadComparison: (file: File) => Promise<void>;
+    loadComparisonArchive: (file: File) => Promise<void>;
     loadComparisonFromSnapshot: (id: string) => Promise<boolean>;
     clearComparison: () => void;
 
@@ -39,7 +42,7 @@ export interface PricingState {
     error: string | null;
     loadPricing: () => Promise<void>;
     importPricing: (file: File) => Promise<void>;
-    importPricingArchive: (file: File) => Promise<void>;
+    importPricingArchive: (file: File, source?: { label: string; fileName: string }) => Promise<void>;
     clearPricing: () => Promise<void>;
     toggleFavorite: (compositeKey: string) => void;
 }

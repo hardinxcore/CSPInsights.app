@@ -213,7 +213,7 @@ export const usePricingStore = create<PricingState>((set, get) => ({
         });
     },
 
-    importPricingArchive: async (file: File) => {
+    importPricingArchive: async (file: File, source?: { label: string; fileName: string }) => {
         set({ isLoading: true, error: null });
 
         return new Promise<void>((resolve, reject) => {
@@ -230,11 +230,11 @@ export const usePricingStore = create<PricingState>((set, get) => ({
                 }
 
                 if (data) {
-                    set({ rows: data, meta });
+                    set({ rows: data, meta: { ...meta, ...source } });
                     try {
                         const db = await getDB();
                         await db.put(STORE_NAME, data, 'rows');
-                        await db.put(STORE_NAME, meta, 'meta');
+                        await db.put(STORE_NAME, { ...meta, ...source }, 'meta');
                     } catch (err) {
                         console.error('Failed to save pricing to DB', err);
                     }
@@ -279,6 +279,31 @@ export const usePricingStore = create<PricingState>((set, get) => ({
                 reject(err);
             };
             worker.postMessage({ file });
+        });
+    },
+
+    loadComparisonArchive: async (file: File) => {
+        set({ isLoading: true, error: null });
+        return new Promise<void>((resolve, reject) => {
+            const worker = new PricingWorker();
+            worker.onmessage = (e) => {
+                const { data, error } = e.data;
+                if (error) {
+                    set({ error, isLoading: false });
+                    worker.terminate();
+                    reject(error);
+                } else if (data) {
+                    set({ comparisonRows: data, isComparing: true, isLoading: false });
+                    worker.terminate();
+                    resolve();
+                }
+            };
+            worker.onerror = (err) => {
+                set({ error: 'Comparison Worker Error', isLoading: false });
+                worker.terminate();
+                reject(err);
+            };
+            worker.postMessage({ file, archive: true });
         });
     },
 

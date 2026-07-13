@@ -3,6 +3,7 @@ import { Search, Filter, RefreshCw, Star, FileUp, FileMinus, Calculator, History
 import type { PriceRow, PricingMeta, SnapshotItem } from '../../types/PricingData';
 import { exportPricingToExcel } from '../../utils/excelExport';
 import { formatCurrency } from '../../utils/format';
+import type { PriceListCatalogItem } from '../../types/PriceListCatalog';
 
 interface PricingToolbarProps {
     searchQuery: string;
@@ -17,6 +18,9 @@ interface PricingToolbarProps {
     setShowSnapshotSelector: React.Dispatch<React.SetStateAction<boolean>>;
     snapshots: SnapshotItem[];
     loadComparisonFromSnapshot: (id: string) => Promise<boolean>;
+    priceLists: PriceListCatalogItem[];
+    loadComparisonPriceList: (item: PriceListCatalogItem) => Promise<void>;
+    comparisonLabel: string | null;
     showChangesOnly: boolean;
     setShowChangesOnly: React.Dispatch<React.SetStateAction<boolean>>;
     clearComparison: () => void;
@@ -50,6 +54,9 @@ export const PricingToolbar: React.FC<PricingToolbarProps> = ({
     setShowSnapshotSelector,
     snapshots,
     loadComparisonFromSnapshot,
+    priceLists,
+    loadComparisonPriceList,
+    comparisonLabel,
     showChangesOnly,
     setShowChangesOnly,
     clearComparison,
@@ -187,6 +194,20 @@ export const PricingToolbar: React.FC<PricingToolbarProps> = ({
                             <span>Compare File</span>
                         </button>
 
+                        <select
+                            className="input-field"
+                            aria-label="Compare with monthly price list"
+                            value=""
+                            onChange={(event) => {
+                                const item = priceLists.find(priceList => priceList.id === event.target.value);
+                                if (item) void loadComparisonPriceList(item);
+                            }}
+                            style={{ padding: '0.5rem', maxWidth: '220px' }}
+                        >
+                            <option value="">Compare month…</option>
+                            {priceLists.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
+                        </select>
+
                         <button
                             onClick={() => setShowSnapshotSelector(!showSnapshotSelector)}
                             className="input-field"
@@ -240,6 +261,11 @@ export const PricingToolbar: React.FC<PricingToolbarProps> = ({
                     </div>
                 ) : (
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        {comparisonLabel && (
+                            <span style={{ alignSelf: 'center', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+                                Comparing: <strong>{comparisonLabel}</strong>
+                            </span>
+                        )}
                         <button
                             onClick={() => setShowChangesOnly(!showChangesOnly)}
                             className={`input-field ${showChangesOnly ? 'active' : ''}`}
@@ -354,7 +380,7 @@ export const PricingToolbar: React.FC<PricingToolbarProps> = ({
 
                 <div style={{ fontSize: '0.85rem', color: 'var(--text-tertiary)' }}>
                     {filteredRows.length} items
-                    {meta && ` • Updated: ${new Date(meta.lastUpdated).toLocaleDateString()}`}
+                    {meta && ` • ${meta.sourceLabel ? `Catalog: ${meta.sourceLabel} • ` : ''}Updated: ${new Date(meta.lastUpdated).toLocaleDateString()}`}
                 </div>
                 <button onClick={clearPricing} style={{ color: 'var(--accent-secondary)', textDecoration: 'underline', cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                     <RefreshCw size={14} /> Clear and update New File

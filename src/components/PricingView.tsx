@@ -6,13 +6,16 @@ import { CartModal } from './CartModal';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { PricingToolbar } from './pricing/PricingToolbar';
 import { PricingRow } from './pricing/PricingRow';
+import type { PriceListCatalogItem } from '../types/PriceListCatalog';
+import { getPriceListCatalog } from '../utils/priceListCatalog';
+import { fetchPriceListArchive } from '../utils/priceListLoader';
 
 export const PricingView: React.FC = () => {
     const {
         rows, meta, isLoading, loadPricing, clearPricing,
         favorites, toggleFavorite,
         comparisonRows, isComparing, loadComparison, loadComparisonFromSnapshot, clearComparison,
-        snapshots
+        loadComparisonArchive, snapshots
     } = usePricingStore();
 
     const [searchQuery, setSearchQuery] = useState('');
@@ -27,6 +30,8 @@ export const PricingView: React.FC = () => {
     const [showSnapshotSelector, setShowSnapshotSelector] = useState(false);
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
     const [copiedId, setCopiedId] = useState<string | null>(null);
+    const [priceLists, setPriceLists] = useState<PriceListCatalogItem[]>([]);
+    const [comparisonLabel, setComparisonLabel] = useState<string | null>(null);
 
     const handleCopy = (text: string, id: string) => {
         navigator.clipboard.writeText(text);
@@ -52,7 +57,18 @@ export const PricingView: React.FC = () => {
 
     useEffect(() => {
         loadPricing();
+        getPriceListCatalog().then(setPriceLists).catch(() => setPriceLists([]));
     }, [loadPricing]);
+
+    const handleLoadComparisonPriceList = async (item: PriceListCatalogItem) => {
+        try {
+            const archive = await fetchPriceListArchive(item);
+            await loadComparisonArchive(archive);
+            setComparisonLabel(item.label);
+        } catch {
+            setComparisonLabel(null);
+        }
+    };
 
     // Comparison Map: ProductId-SkuId-Term-Plan-Currency -> Row
     const comparisonMap = useMemo(() => {
@@ -162,6 +178,7 @@ export const PricingView: React.FC = () => {
 
     const handleCompareUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
+            setComparisonLabel(null);
             loadComparison(e.target.files[0]);
         }
     };
@@ -198,6 +215,9 @@ export const PricingView: React.FC = () => {
                 setShowSnapshotSelector={setShowSnapshotSelector}
                 snapshots={snapshots}
                 loadComparisonFromSnapshot={loadComparisonFromSnapshot}
+                priceLists={priceLists}
+                loadComparisonPriceList={handleLoadComparisonPriceList}
+                comparisonLabel={comparisonLabel}
                 showChangesOnly={showChangesOnly}
                 setShowChangesOnly={setShowChangesOnly}
                 clearComparison={clearComparison}
