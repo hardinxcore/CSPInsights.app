@@ -8,6 +8,11 @@ export interface PricingMeta {
     lastUpdated: string; // ISO date
     sourceLabel?: string;
     sourceFileName?: string;
+    sourceType?: 'AX' | 'NL';
+    effectiveDate?: string;
+    publishedAt?: string;
+    fileSize?: number;
+    sha256?: string;
 }
 
 export interface SnapshotItem {
@@ -42,7 +47,7 @@ export interface PricingState {
     error: string | null;
     loadPricing: () => Promise<void>;
     importPricing: (file: File) => Promise<void>;
-    importPricingArchive: (file: File, source?: { label: string; fileName: string }) => Promise<void>;
+    importPricingArchive: (file: File, source?: Partial<PricingMeta> & { label: string; fileName: string }) => Promise<void>;
     clearPricing: () => Promise<void>;
     toggleFavorite: (compositeKey: string) => void;
 }

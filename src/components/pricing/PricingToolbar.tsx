@@ -23,6 +23,7 @@ interface PricingToolbarProps {
     loadPriceList: (item: PriceListCatalogItem) => Promise<void>;
     loadComparisonPriceList: (item: PriceListCatalogItem) => Promise<void>;
     comparisonLabel: string | null;
+    comparisonSummary: { increases: number; decreases: number; unchanged: number; added: number; removed: number } | null;
     showChangesOnly: boolean;
     setShowChangesOnly: React.Dispatch<React.SetStateAction<boolean>>;
     clearComparison: () => void;
@@ -61,6 +62,7 @@ export const PricingToolbar: React.FC<PricingToolbarProps> = ({
     loadPriceList,
     loadComparisonPriceList,
     comparisonLabel,
+    comparisonSummary,
     showChangesOnly,
     setShowChangesOnly,
     clearComparison,
@@ -92,6 +94,8 @@ export const PricingToolbar: React.FC<PricingToolbarProps> = ({
                 >
                     <span style={{ color: 'var(--brand-turquoise)', fontWeight: 700 }}>Active price list:</span>
                     <strong style={{ color: 'var(--text-primary)' }}>{meta.sourceLabel || 'Select a monthly price list'}</strong>
+                    {meta.sourceType && <span style={{ color: 'var(--text-tertiary)' }}>· {meta.sourceType}</span>}
+                    {meta.totalRows > 0 && <span style={{ color: 'var(--text-tertiary)' }}>· {meta.totalRows.toLocaleString()} products</span>}
                     {priceLists.length > 0 && (
                         <select
                             aria-label="Active price list"
@@ -294,6 +298,11 @@ export const PricingToolbar: React.FC<PricingToolbarProps> = ({
                         {comparisonLabel && (
                             <span style={{ alignSelf: 'center', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
                                 Comparing: <strong>{comparisonLabel}</strong>
+                            </span>
+                        )}
+                        {comparisonSummary && (
+                            <span style={{ alignSelf: 'center', color: 'var(--text-tertiary)', fontSize: '0.78rem' }}>
+                                {comparisonSummary.increases} increases · {comparisonSummary.decreases} decreases · {comparisonSummary.added} added · {comparisonSummary.removed} removed
                             </span>
                         )}
                         <button

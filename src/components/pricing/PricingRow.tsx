@@ -145,7 +145,7 @@ export const PricingRow: React.FC<PricingRowProps> = ({
                         {/* STANDARD VIEW COLUMNS */}
                         {isComparing && (
                             <div style={{ width: '100px', textAlign: 'right', opacity: 1 }}>
-                                <div style={{ fontSize: '0.8rem', color: 'var(--brand-turquoise)' }}>New Price</div>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--brand-turquoise)' }}>Comparison Price</div>
                                 <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>
                                     {compRow ? formatCurrency(compRow.ERPPrice, compRow.Currency) : '-'}
                                 </div>

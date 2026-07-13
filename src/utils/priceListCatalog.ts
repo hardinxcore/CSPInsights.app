@@ -5,14 +5,14 @@ const MONTHS = [
     'July', 'August', 'September', 'October', 'November', 'December'
 ] as const;
 
-const FILE_PATTERN = /^(?:AX|NL)-(January|February|March|April|May|June|July|August|September|October|November|December)-(\d{4})-Newcommerce-Cloud-Reseller-Pricelist\.zip$/i;
+const FILE_PATTERN = /^(AX|NL)-(January|February|March|April|May|June|July|August|September|October|November|December)-(\d{4})-Newcommerce-Cloud-Reseller-Pricelist\.zip$/i;
 
 export const parsePriceListFileName = (fileName: string): Omit<PriceListCatalogItem, 'url'> | null => {
     const match = FILE_PATTERN.exec(fileName);
     if (!match) return null;
 
-    const monthName = match[1];
-    const year = Number(match[2]);
+    const monthName = match[2];
+    const year = Number(match[3]);
     const monthIndex = MONTHS.findIndex(month => month.toLowerCase() === monthName.toLowerCase());
     if (monthIndex < 0 || !Number.isInteger(year)) return null;
 
@@ -22,6 +22,8 @@ export const parsePriceListFileName = (fileName: string): Omit<PriceListCatalogI
         month: monthIndex + 1,
         year,
         label: `${MONTHS[monthIndex]} ${year}`,
+        sourceType: match[1].toUpperCase() as 'AX' | 'NL',
+        effectiveDate: `${year}-${String(monthIndex + 1).padStart(2, '0')}-01`,
     };
 };
 

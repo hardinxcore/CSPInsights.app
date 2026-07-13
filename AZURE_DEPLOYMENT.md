@@ -24,3 +24,14 @@ At the time of the last validation, the active Azure CLI context was the `VSE6-F
 - GitHub Actions performs build, lint, unit tests, security audit, Playwright smoke tests, and deployment.
 - A successful local build does not prove that the Static Web Apps token points to the intended resource.
 - Azure MCP is not currently connected to this workspace; Azure CLI checks are read-only unless an explicit resource command is run.
+
+## Price-list storage authentication
+
+The API supports two storage authentication modes:
+
+- Current mode: `PRICE_LISTS_STORAGE_CONNECTION_STRING`.
+- Managed Identity mode: set `PRICE_LISTS_AUTH_MODE=managed-identity` and `PRICE_LISTS_STORAGE_ACCOUNT_NAME=cspinsightspl130726`. Assign the API's managed identity the `Storage Blob Data Reader` role on the storage account.
+
+Managed Identity mode uses `DefaultAzureCredential` and user-delegation SAS tokens; no storage key is needed by the application.
+
+The current Azure Static Web Apps deployment uses its managed Functions API. Microsoft documents that managed Static Web Apps APIs do not support managed identity. Enabling the second mode therefore requires moving the API to a bring-your-own Azure Function App and connecting it to Static Web Apps on the Standard plan. Until that infrastructure change is approved, the existing connection-string setting remains active and the new code path stays disabled.

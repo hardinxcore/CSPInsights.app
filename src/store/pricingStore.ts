@@ -216,7 +216,7 @@ export const usePricingStore = create<PricingState>((set, get) => ({
         });
     },
 
-    importPricingArchive: async (file: File, source?: { label: string; fileName: string }) => {
+    importPricingArchive: async (file: File, source?: Partial<PricingState['meta']> & { label: string; fileName: string }) => {
         set({ isLoading: true, error: null });
 
         return new Promise<void>((resolve, reject) => {

@@ -2,11 +2,12 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import type { Plugin } from 'vite'
+import { createHash } from 'node:crypto'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { basename, join, resolve } from 'node:path'
 
 const priceListsDirectory = resolve('price-lists')
-const priceListPattern = /^(?:AX|NL)-(January|February|March|April|May|June|July|August|September|October|November|December)-(\d{4})-Newcommerce-Cloud-Reseller-Pricelist\.zip$/i
+const priceListPattern = /^(AX|NL)-(January|February|March|April|May|June|July|August|September|October|November|December)-(\d{4})-Newcommerce-Cloud-Reseller-Pricelist\.zip$/i
 
 const getPriceListManifest = () => {
   if (!statExists(priceListsDirectory)) return { items: [] }
@@ -17,19 +18,28 @@ const getPriceListManifest = () => {
     .map(fileName => {
       const match = priceListPattern.exec(fileName)
       if (!match) return null
-      const month = monthNames.findIndex(name => name.toLowerCase() === match[1].toLowerCase()) + 1
-      const year = Number(match[2])
+      const month = monthNames.findIndex(name => name.toLowerCase() === match[2].toLowerCase()) + 1
+      const year = Number(match[3])
+      const filePath = join(priceListsDirectory, fileName)
+      const file = readFileSync(filePath)
+      const stats = statSync(filePath)
       return {
         id: `${year}-${String(month).padStart(2, '0')}`,
         fileName,
         month,
         year,
         label: `${monthNames[month - 1]} ${year}`,
+        sourceType: match[1].toUpperCase(),
+        effectiveDate: `${year}-${String(month).padStart(2, '0')}-01`,
+        publishedAt: stats.mtime.toISOString(),
+        fileSize: stats.size,
+        sha256: createHash('sha256').update(file).digest('hex'),
         url: `/price-lists/${encodeURIComponent(fileName)}`,
       }
     })
     .filter((item): item is {
-      id: string; fileName: string; month: number; year: number; label: string; url: string
+      id: string; fileName: string; month: number; year: number; label: string; url: string;
+      sourceType: string; effectiveDate: string; publishedAt: string; fileSize: number; sha256: string
     } => item !== null)
     .sort((a, b) => b.year - a.year || b.month - a.month)
 

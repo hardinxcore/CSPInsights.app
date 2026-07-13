@@ -72,10 +72,28 @@ export const PricingView: React.FC = () => {
 
     const handleLoadPriceList = async (item: PriceListCatalogItem) => {
         const archive = await fetchPriceListArchive(item);
-        await importPricingArchive(archive, { label: item.label, fileName: item.fileName });
+        await importPricingArchive(archive, { ...item, label: item.label, fileName: item.fileName });
     };
 
     const activePriceListId = priceLists.find(item => item.fileName === meta?.sourceFileName)?.id || '';
+
+    const comparisonSummary = useMemo(() => {
+        if (!isComparing) return null;
+        const key = (row: typeof rows[number]) => `${row.ProductId}-${row.SkuId}-${row.TermDuration}-${row.BillingPlan}-${row.Currency}`;
+        const current = new Map(rows.map(row => [key(row), row]));
+        const comparison = new Map(comparisonRows.map(row => [key(row), row]));
+        let increases = 0; let decreases = 0; let unchanged = 0; let added = 0; let removed = 0;
+        current.forEach((row, id) => {
+            const previous = comparison.get(id);
+            if (!previous) { added++; return; }
+            const diff = row.ERPPrice - previous.ERPPrice;
+            if (Math.abs(diff) < 0.000001) unchanged++;
+            else if (diff > 0) increases++;
+            else decreases++;
+        });
+        comparison.forEach((_row, id) => { if (!current.has(id)) removed++; });
+        return { increases, decreases, unchanged, added, removed };
+    }, [rows, comparisonRows, isComparing]);
 
     // Comparison Map: ProductId-SkuId-Term-Plan-Currency -> Row
     const comparisonMap = useMemo(() => {
@@ -227,6 +245,7 @@ export const PricingView: React.FC = () => {
                 loadPriceList={handleLoadPriceList}
                 loadComparisonPriceList={handleLoadComparisonPriceList}
                 comparisonLabel={comparisonLabel}
+                comparisonSummary={comparisonSummary}
                 showChangesOnly={showChangesOnly}
                 setShowChangesOnly={setShowChangesOnly}
                 clearComparison={clearComparison}

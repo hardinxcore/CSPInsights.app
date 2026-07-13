@@ -1,4 +1,5 @@
 import { app } from '@azure/functions';
+import { DefaultAzureCredential } from '@azure/identity';
 import {
   BlobServiceClient,
   BlobSASPermissions,
@@ -9,9 +10,21 @@ import {
 const containerName = 'price-lists';
 const filePattern = /^(?:AX|NL)-(January|February|March|April|May|June|July|August|September|October|November|December)-(\d{4})-Newcommerce-Cloud-Reseller-Pricelist\.zip$/i;
 const connectionString = process.env.PRICE_LISTS_STORAGE_CONNECTION_STRING;
+const storageAccountName = process.env.PRICE_LISTS_STORAGE_ACCOUNT_NAME;
+const managedIdentityEnabled = process.env.PRICE_LISTS_AUTH_MODE === 'managed-identity' && Boolean(storageAccountName);
 
 const getStorageContext = () => {
-  if (!connectionString) throw new Error('PRICE_LISTS_STORAGE_CONNECTION_STRING is not configured.');
+  if (managedIdentityEnabled) {
+    const accountUrl = `https://${storageAccountName}.blob.core.windows.net`;
+    const credential = new DefaultAzureCredential();
+    return {
+      accountName: storageAccountName,
+      accountUrl,
+      credential,
+      container: new BlobServiceClient(accountUrl, credential).getContainerClient(containerName),
+    };
+  }
+  if (!connectionString) throw new Error('PRICE_LISTS_STORAGE_ACCOUNT_NAME or PRICE_LISTS_STORAGE_CONNECTION_STRING must be configured.');
 
   const accountName = connectionString.match(/(?:^|;)AccountName=([^;]+)/i)?.[1];
   const accountKey = connectionString.match(/(?:^|;)AccountKey=([^;]+)/i)?.[1];
@@ -20,6 +33,7 @@ const getStorageContext = () => {
   return {
     accountName,
     accountKey,
+    accountUrl: `https://${accountName}.blob.core.windows.net`,
     container: BlobServiceClient.fromConnectionString(connectionString).getContainerClient(containerName),
   };
 };
@@ -57,7 +71,7 @@ app.http('getPriceListUrl', {
     }
 
     try {
-      const { accountName, accountKey, container } = getStorageContext();
+      const { accountName, accountKey, accountUrl, credential, container } = getStorageContext();
       const blobClient = container.getBlobClient(fileName);
       if (!(await blobClient.exists())) return { status: 404, jsonBody: { error: 'Price list not found.' } };
 
@@ -73,14 +87,17 @@ app.http('getPriceListUrl', {
         };
       }
 
-      const sas = generateBlobSASQueryParameters({
+      const sasOptions = {
         containerName,
         blobName: fileName,
         permissions: BlobSASPermissions.parse('r'),
         startsOn: new Date(Date.now() - 60_000),
         expiresOn: new Date(Date.now() + 5 * 60_000),
         protocol: 'https',
-      }, new StorageSharedKeyCredential(accountName, accountKey)).toString();
+      };
+      const sas = managedIdentityEnabled
+        ? generateBlobSASQueryParameters(sasOptions, await new BlobServiceClient(accountUrl, credential).getUserDelegationKey(sasOptions.startsOn, sasOptions.expiresOn), accountName).toString()
+        : generateBlobSASQueryParameters(sasOptions, new StorageSharedKeyCredential(accountName, accountKey)).toString();
 
       return { jsonBody: { url: `${blobClient.url}?${sas}` } };
     } catch (error) {
