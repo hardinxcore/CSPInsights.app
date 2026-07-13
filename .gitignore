@@ -30,3 +30,6 @@ dist-ssr
 *.csv
 *.xlsx
 *.xls
+
+# Local price-list ZIP archives; production files will be served from Azure Blob Storage
+/price-lists/

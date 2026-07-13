@@ -2,6 +2,7 @@ import React from 'react';
 import { Upload, Download, FileSpreadsheet } from 'lucide-react';
 import { usePricingStore } from '../store/pricingStore';
 import { FileDropZone } from './FileDropZone';
+import { AvailablePriceLists } from './pricing/AvailablePriceLists';
 
 export const PricingUpload: React.FC = () => {
     const { importPricing, isLoading, error, snapshots, loadSnapshots, restoreSnapshot } = usePricingStore();
@@ -23,6 +24,7 @@ export const PricingUpload: React.FC = () => {
 
     return (
         <div style={{ width: '100%', maxWidth: '600px', margin: '0 auto' }}>
+            <AvailablePriceLists />
             <FileDropZone
                 title="Upload Pricing Catalog"
                 description="Drag & drop your Pricing CSV here"

@@ -1,4 +1,5 @@
 import Papa from 'papaparse';
+import { strFromU8, unzipSync } from 'fflate';
 import { PriceRowSchema } from '../types/schemas';
 import type { PriceRow } from '../types/PricingData';
 
@@ -6,7 +7,7 @@ import type { PriceRow } from '../types/PricingData';
 const ctx: Worker = self as any;
 
 ctx.onmessage = async (e: MessageEvent) => {
-    const { file } = e.data;
+    const { file, archive } = e.data;
 
     if (!file) {
         ctx.postMessage({ error: 'No file provided' });
@@ -14,7 +15,19 @@ ctx.onmessage = async (e: MessageEvent) => {
     }
 
     try {
-        Papa.parse(file, {
+        let input: File | string = file;
+        if (archive) {
+            const entries = unzipSync(new Uint8Array(await file.arrayBuffer()));
+            const csvEntries = Object.entries(entries).filter(([name]) => name.toLowerCase().endsWith('.csv'));
+            if (csvEntries.length !== 1) {
+                throw new Error(csvEntries.length === 0
+                    ? 'De ZIP bevat geen CSV-bestand.'
+                    : 'De ZIP bevat meerdere CSV-bestanden; er mag precies één CSV in staan.');
+            }
+            input = strFromU8(csvEntries[0][1]);
+        }
+
+        Papa.parse(input, {
             header: true,
             skipEmptyLines: true,
             complete: (results) => {

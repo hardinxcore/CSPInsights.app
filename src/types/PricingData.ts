@@ -39,6 +39,7 @@ export interface PricingState {
     error: string | null;
     loadPricing: () => Promise<void>;
     importPricing: (file: File) => Promise<void>;
+    importPricingArchive: (file: File) => Promise<void>;
     clearPricing: () => Promise<void>;
     toggleFavorite: (compositeKey: string) => void;
 }

@@ -213,6 +213,47 @@ export const usePricingStore = create<PricingState>((set, get) => ({
         });
     },
 
+    importPricingArchive: async (file: File) => {
+        set({ isLoading: true, error: null });
+
+        return new Promise<void>((resolve, reject) => {
+            const worker = new PricingWorker();
+
+            worker.onmessage = async (e) => {
+                const { data, meta, error } = e.data;
+
+                if (error) {
+                    set({ error, isLoading: false });
+                    worker.terminate();
+                    reject(error);
+                    return;
+                }
+
+                if (data) {
+                    set({ rows: data, meta });
+                    try {
+                        const db = await getDB();
+                        await db.put(STORE_NAME, data, 'rows');
+                        await db.put(STORE_NAME, meta, 'meta');
+                    } catch (err) {
+                        console.error('Failed to save pricing to DB', err);
+                    }
+                    set({ isLoading: false });
+                    worker.terminate();
+                    resolve();
+                }
+            };
+
+            worker.onerror = (err) => {
+                set({ error: 'Worker Error', isLoading: false });
+                worker.terminate();
+                reject(err);
+            };
+
+            worker.postMessage({ file, archive: true });
+        });
+    },
+
     loadComparison: async (file: File) => {
         set({ isLoading: true, error: null });
         return new Promise<void>((resolve, reject) => {
