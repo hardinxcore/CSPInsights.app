@@ -26,7 +26,7 @@ export const parsePriceListFileName = (fileName: string): Omit<PriceListCatalogI
 };
 
 export const getPriceListCatalog = async (): Promise<PriceListCatalogItem[]> => {
-    const load = async (url: string, fallbackUrl: (fileName: string) => string) => {
+    const load = async (url: string, fallbackUrl: (fileName: string) => string, forceFallbackUrl = false) => {
         const response = await fetch(url, { headers: { Accept: 'application/json' } });
         if (!response.ok) throw new Error('Catalogus niet beschikbaar.');
 
@@ -34,11 +34,11 @@ export const getPriceListCatalog = async (): Promise<PriceListCatalogItem[]> => 
         return payload.items
             .filter(item => parsePriceListFileName(item.fileName) !== null)
             .sort((a, b) => b.year - a.year || b.month - a.month)
-            .map(item => ({ ...item, url: item.url || fallbackUrl(item.fileName) }));
+            .map(item => ({ ...item, url: forceFallbackUrl ? fallbackUrl(item.fileName) : (item.url || fallbackUrl(item.fileName)) }));
     };
 
     try {
-        return await load('/api/price-lists', fileName => `/api/price-lists/${encodeURIComponent(fileName)}`);
+        return await load('/api/price-lists', fileName => `/api/price-lists/${encodeURIComponent(fileName)}`, true);
     } catch {
         return load('/price-lists/manifest.json', fileName => `/price-lists/${encodeURIComponent(fileName)}`);
     }
