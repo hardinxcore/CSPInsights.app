@@ -21,8 +21,8 @@ ctx.onmessage = async (e: MessageEvent) => {
             const csvEntries = Object.entries(entries).filter(([name]) => name.toLowerCase().endsWith('.csv'));
             if (csvEntries.length !== 1) {
                 throw new Error(csvEntries.length === 0
-                    ? 'De ZIP bevat geen CSV-bestand.'
-                    : 'De ZIP bevat meerdere CSV-bestanden; er mag precies één CSV in staan.');
+                    ? 'The ZIP contains no CSV file.'
+                    : 'The ZIP contains multiple CSV files; it must contain exactly one CSV.');
             }
             input = strFromU8(csvEntries[0][1]);
         }

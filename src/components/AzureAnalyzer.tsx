@@ -422,7 +422,7 @@ export const AzureAnalyzer: React.FC = () => {
                                 outerRadius={80}
                                 paddingAngle={5}
                                 dataKey="value"
-                                onClick={(data) => setSelectedCategory(data.name === 'Other' ? null : data.name)}
+                                onClick={(data) => setSelectedCategory(data.name === 'Other' ? null : (data.name ?? null))}
                                 style={{ cursor: 'pointer' }}
                             >
                                 {aggregations.categories.map((entry, index) => (

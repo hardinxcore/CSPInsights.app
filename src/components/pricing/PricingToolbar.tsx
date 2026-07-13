@@ -78,6 +78,18 @@ export const PricingToolbar: React.FC<PricingToolbarProps> = ({
 }) => {
     return (
         <div className="glass-panel" style={{ padding: '1rem', marginBottom: '1rem', display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap', position: 'relative', zIndex: 100 }}>
+            {meta && (
+                <div
+                    title={meta.sourceFileName || 'Current pricing catalog'}
+                    style={{
+                        flexBasis: '100%', display: 'flex', alignItems: 'center', gap: '0.45rem',
+                        color: 'var(--text-secondary)', fontSize: '0.85rem',
+                    }}
+                >
+                    <span style={{ color: 'var(--brand-turquoise)', fontWeight: 700 }}>Active price list:</span>
+                    <strong style={{ color: 'var(--text-primary)' }}>{meta.sourceLabel || 'Imported CSV'}</strong>
+                </div>
+            )}
             <div
                 className="search-bar input-group"
                 style={{

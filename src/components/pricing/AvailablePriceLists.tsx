@@ -24,7 +24,7 @@ export const AvailablePriceLists: React.FC = () => {
             const archive = await fetchPriceListArchive(item);
             await importPricingArchive(archive, { label: item.label, fileName: item.fileName });
         } catch (error) {
-            setCatalogError(error instanceof Error ? error.message : `${item.label} kon niet worden ingeladen.`);
+            setCatalogError(error instanceof Error ? error.message : `${item.label} could not be loaded.`);
         } finally {
             setLoadingId(null);
         }
@@ -35,7 +35,7 @@ export const AvailablePriceLists: React.FC = () => {
     return (
         <section style={{ marginBottom: '2rem' }} aria-labelledby="available-price-lists-heading">
             <h3 id="available-price-lists-heading" style={{ color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
-                Beschikbare maandprijslijsten
+                Available monthly price lists
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
                 {items.map(item => (
@@ -63,7 +63,7 @@ export const AvailablePriceLists: React.FC = () => {
                 </div>
             )}
             <p style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--text-tertiary)', fontSize: '0.8rem', marginTop: '0.65rem' }}>
-                <PackageOpen size={14} /> De gekozen ZIP wordt direct verwerkt; er wordt geen downloadbestand aangeboden.
+                <PackageOpen size={14} /> The selected ZIP is processed directly; no download is offered.
             </p>
         </section>
     );

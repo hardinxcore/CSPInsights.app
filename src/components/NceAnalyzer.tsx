@@ -219,7 +219,7 @@ export const NceAnalyzer: React.FC = () => {
                                     dataKey="value"
                                     onClick={(data) => {
                                         if (showCancellableOnly) setShowCancellableOnly(false);
-                                        setSelectedTerm(data.name === selectedTerm ? null : data.name);
+                                        setSelectedTerm(data.name === selectedTerm ? null : (data.name ?? null));
                                     }}
                                     style={{ cursor: 'pointer' }}
                                 >
@@ -232,7 +232,7 @@ export const NceAnalyzer: React.FC = () => {
                                     ))}
                                 </Pie>
                                 <RechartsTooltip
-                                    formatter={(value: number | undefined) => formatCurrency(value || 0)}
+                                    formatter={(value) => formatCurrency(typeof value === 'number' ? value : 0)}
                                     contentStyle={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}
                                 />
                                 <Legend

@@ -28,7 +28,7 @@ export const parsePriceListFileName = (fileName: string): Omit<PriceListCatalogI
 export const getPriceListCatalog = async (): Promise<PriceListCatalogItem[]> => {
     const load = async (url: string, fallbackUrl: (fileName: string) => string, forceFallbackUrl = false) => {
         const response = await fetch(url, { headers: { Accept: 'application/json' } });
-        if (!response.ok) throw new Error('Catalogus niet beschikbaar.');
+        if (!response.ok) throw new Error('Price list catalog is unavailable.');
 
         const payload = await response.json() as PriceListCatalogResponse;
         return payload.items
