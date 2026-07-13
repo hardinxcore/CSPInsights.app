@@ -72,7 +72,13 @@ export const PricingView: React.FC = () => {
 
     const handleLoadPriceList = async (item: PriceListCatalogItem) => {
         const archive = await fetchPriceListArchive(item);
-        await importPricingArchive(archive, { ...item, label: item.label, fileName: item.fileName });
+        await importPricingArchive(archive, {
+            ...item,
+            label: item.label,
+            fileName: item.fileName,
+            sourceLabel: item.label,
+            sourceFileName: item.fileName,
+        });
     };
 
     const activePriceListId = priceLists.find(item => item.fileName === meta?.sourceFileName)?.id || '';
