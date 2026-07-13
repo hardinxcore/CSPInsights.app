@@ -37,6 +37,14 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Browser smoke tests
         run: npm run e2e
+      - name: Install API production dependencies
+        run: npm ci --omit=dev --prefix api
+      - name: Deploy Managed Identity API
+        uses: Azure/functions-action@v1
+        with:
+          app-name: cspinsightsapifunc
+          package: api
+          publish-profile: ${{ secrets.CSPINSIGHTS_API_PUBLISH_PROFILE }}
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
@@ -45,7 +53,7 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
           app_location: "/"
-          api_location: "api"
+          api_location: ""
           output_location: "dist"
 
   close_pull_request_job:
