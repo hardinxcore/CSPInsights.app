@@ -5,11 +5,7 @@ export const fetchPriceListArchive = async (item: PriceListCatalogItem): Promise
 
     let archiveUrl = item.url;
     if (item.url.startsWith('/api/price-lists/')) {
-        const sasResponse = await fetch(item.url, { headers: { Accept: 'application/json' } });
-        if (!sasResponse.ok) throw new Error(`${item.label} kon niet worden vrijgegeven.`);
-        const payload = await sasResponse.json() as { url?: string };
-        if (!payload.url) throw new Error(`${item.label} heeft geen geldige downloadlocatie.`);
-        archiveUrl = payload.url;
+        archiveUrl = `${item.url}?download=1`;
     }
 
     const response = await fetch(archiveUrl, { headers: { Accept: 'application/zip' } });

@@ -61,6 +61,18 @@ app.http('getPriceListUrl', {
       const blobClient = container.getBlobClient(fileName);
       if (!(await blobClient.exists())) return { status: 404, jsonBody: { error: 'Price list not found.' } };
 
+      if (request.query.get('download') === '1') {
+        const archive = await blobClient.downloadToBuffer();
+        return {
+          body: archive,
+          headers: {
+            'Content-Type': 'application/zip',
+            'Content-Disposition': 'inline',
+            'Cache-Control': 'private, max-age=300',
+          },
+        };
+      }
+
       const sas = generateBlobSASQueryParameters({
         containerName,
         blobName: fileName,
