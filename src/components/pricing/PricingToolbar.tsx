@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Filter, RefreshCw, Star, FileUp, FileMinus, Calculator, History, Download, ShoppingCart, X } from 'lucide-react';
+import { Search, Filter, RefreshCw, Star, FileUp, FileMinus, History, Download, ShoppingCart, X } from 'lucide-react';
 import type { PriceRow, PricingMeta, SnapshotItem } from '../../types/PricingData';
 import { exportPricingToExcel } from '../../utils/excelExport';
 import { formatCurrency } from '../../utils/format';
@@ -10,8 +10,6 @@ interface PricingToolbarProps {
     setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
     showFavoritesOnly: boolean;
     setShowFavoritesOnly: React.Dispatch<React.SetStateAction<boolean>>;
-    showMargins: boolean;
-    setShowMargins: React.Dispatch<React.SetStateAction<boolean>>;
     isComparing: boolean;
     comparisonInputRef: React.RefObject<HTMLInputElement | null>;
     showSnapshotSelector: boolean;
@@ -49,8 +47,6 @@ export const PricingToolbar: React.FC<PricingToolbarProps> = ({
     setSearchQuery,
     showFavoritesOnly,
     setShowFavoritesOnly,
-    showMargins,
-    setShowMargins,
     isComparing,
     comparisonInputRef,
     showSnapshotSelector,
@@ -194,25 +190,6 @@ export const PricingToolbar: React.FC<PricingToolbarProps> = ({
                 >
                     <Star size={16} fill={showFavoritesOnly ? 'white' : 'none'} />
                     {showFavoritesOnly && <span>Favorites</span>}
-                </button>
-
-                {/* Margin/Sales View Toggle */}
-                <button
-                    onClick={() => setShowMargins(!showMargins)}
-                    className={`input-field ${showMargins ? 'active' : ''}`}
-                    style={{
-                        padding: '0.5rem',
-                        background: showMargins ? 'var(--brand-orange)' : 'transparent',
-                        color: showMargins ? 'white' : 'var(--text-primary)',
-                        border: showMargins ? 'none' : '1px solid var(--border-color)',
-                        cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', gap: '0.5rem',
-                        boxShadow: showMargins ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
-                    }}
-                    title={showMargins ? "Disable Margins View" : "Enable Margins View"}
-                >
-                    {showMargins ? <FileMinus size={16} /> : <Calculator size={16} />}
-                    <span>Margins</span>
                 </button>
 
                 {/* Comparison Controls */}
@@ -392,7 +369,7 @@ export const PricingToolbar: React.FC<PricingToolbarProps> = ({
                         >
                             <ShoppingCart size={20} />
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1 }}>
-                                <span style={{ fontSize: '0.75rem', fontWeight: 500, opacity: 0.9 }}>{showMargins ? "Sales Total" : "Total"}</span>
+                                <span style={{ fontSize: '0.75rem', fontWeight: 500, opacity: 0.9 }}>Total</span>
                                 <span style={{ fontSize: '1rem' }}>{formatCurrency(cartTotal.total)}</span>
                             </div>
                         </button>
@@ -408,7 +385,7 @@ export const PricingToolbar: React.FC<PricingToolbarProps> = ({
                 )}
 
                 <button
-                    onClick={() => exportPricingToExcel(filteredRows, showMargins)}
+                    onClick={() => exportPricingToExcel(filteredRows)}
                     className="input-field"
                     style={{ padding: '0.5rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                     title="Download current filtered list to Excel"

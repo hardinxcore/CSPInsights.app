@@ -1,30 +1,19 @@
 import type { PriceRow } from '../types/PricingData';
 
-export const exportPricingToExcel = async (rows: PriceRow[], showMargins: boolean, filename = 'pricing_catalog.xlsx') => {
+export const exportPricingToExcel = async (rows: PriceRow[], filename = 'pricing_catalog.xlsx') => {
     const XLSX = await import('xlsx');
-    const data = rows.map(row => {
-        const margin = row.ERPPrice - row.UnitPrice;
-        const marginPercent = row.ERPPrice > 0 ? (margin / row.ERPPrice) : 0;
-
-        const base: any = {
-            'Product Title': row.ProductTitle,
-            'SKU Title': row.SkuTitle,
-            'SKU ID': row.SkuId,
-            'Publisher': row.Publisher,
-            'Segment': row.Segment,
-            'Term': `${row.TermDuration} (${row.BillingPlan})`,
-            'Currency': row.Currency,
-            'Unit Price (Cost)': row.UnitPrice,
-            'ERP Price (Retail)': row.ERPPrice,
-        };
-
-        if (showMargins) {
-            base['Margin Amount'] = margin;
-            base['Margin %'] = marginPercent;
-        }
-
-        return base;
-    });
+    // Only the ERP (retail/sell) price is exported — the purchase price (cost)
+    // is intentionally never exposed to app users.
+    const data = rows.map(row => ({
+        'Product Title': row.ProductTitle,
+        'SKU Title': row.SkuTitle,
+        'SKU ID': row.SkuId,
+        'Publisher': row.Publisher,
+        'Segment': row.Segment,
+        'Term': `${row.TermDuration} (${row.BillingPlan})`,
+        'Currency': row.Currency,
+        'ERP Price (Retail)': row.ERPPrice,
+    }));
 
     const worksheet = XLSX.utils.json_to_sheet(data);
 
@@ -37,13 +26,8 @@ export const exportPricingToExcel = async (rows: PriceRow[], showMargins: boolea
         { wch: 15 }, // Segment
         { wch: 15 }, // Term
         { wch: 10 }, // Currency
-        { wch: 15 }, // Unit
         { wch: 15 }, // ERP
     ];
-    if (showMargins) {
-        colWidths.push({ wch: 15 });
-        colWidths.push({ wch: 10 });
-    }
     worksheet['!cols'] = colWidths;
 
     const workbook = XLSX.utils.book_new();

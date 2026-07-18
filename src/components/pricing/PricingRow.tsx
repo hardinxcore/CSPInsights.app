@@ -11,7 +11,6 @@ interface PricingRowProps {
     qty: number;
     isComparing: boolean;
     comparisonMap: Map<string, PriceRow>;
-    showMargins: boolean;
     cheapestPriceMap: Map<string, number>;
     favorites: string[];
     toggleFavorite: (compositeKey: string) => void;
@@ -29,7 +28,6 @@ export const PricingRow: React.FC<PricingRowProps> = ({
     qty,
     isComparing,
     comparisonMap,
-    showMargins,
     cheapestPriceMap,
     favorites,
     toggleFavorite,
@@ -47,19 +45,14 @@ export const PricingRow: React.FC<PricingRowProps> = ({
     // Comparison Logic
     const compRow = isComparing ? comparisonMap.get(rowId) : null;
 
-    // If showing margins, we care about UnitPrice (Cost) changes.
-    // If standard view (requested by user), we assume they want to see ERP Price changes.
-    const currentPrice = showMargins ? row.UnitPrice : row.ERPPrice;
-    const compPrice = compRow ? (showMargins ? compRow.UnitPrice : compRow.ERPPrice) : 0;
+    // Only the ERP (retail/sell) price is ever shown; the purchase price is hidden.
+    const currentPrice = row.ERPPrice;
+    const compPrice = compRow ? compRow.ERPPrice : 0;
 
     const priceDiff = compRow ? compPrice - currentPrice : 0;
     const isNew = isComparing && !compRow;
     const hasChange = isComparing && (isNew || Math.abs(priceDiff) > 0.001);
     const diffPercent = (currentPrice > 0) ? (priceDiff / currentPrice) * 100 : 0;
-
-    // Margin Logic
-    const margin = row.ERPPrice - row.UnitPrice;
-    const marginPercent = row.ERPPrice > 0 ? (margin / row.ERPPrice) * 100 : 0;
 
     return (
         <div
@@ -114,35 +107,8 @@ export const PricingRow: React.FC<PricingRowProps> = ({
                     <div style={{ fontWeight: 500 }}>{row.TermDuration} ({row.BillingPlan})</div>
                 </div>
 
-                {/* MARGIN VIEW COLUMNS */}
-                {showMargins ? (
-                    <>
-                        {/* Inkoop */}
-                        <div style={{ width: '100px', textAlign: 'right' }}>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>Unit Price</div>
-                            <div style={{ fontWeight: 500 }}>{formatCurrency(row.UnitPrice, row.Currency)}</div>
-                        </div>
-
-                        {/* Verkoop (Advies) */}
-                        <div style={{ width: '100px', textAlign: 'right' }}>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>ERP Price</div>
-                            <div style={{ fontWeight: 500 }}>{formatCurrency(row.ERPPrice, row.Currency)}</div>
-                        </div>
-
-                        {/* Margin */}
-                        <div style={{ width: '100px', textAlign: 'right' }}>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>Margin</div>
-                            <div style={{
-                                fontWeight: 600,
-                                color: margin > 0 ? 'var(--success-color)' : 'var(--error-color)'
-                            }}>
-                                {formatCurrency(margin, row.Currency)} ({marginPercent.toFixed(1)}%)
-                            </div>
-                        </div>
-                    </>
-                ) : (
-                    <>
-                        {/* STANDARD VIEW COLUMNS */}
+                {/* STANDARD VIEW COLUMNS (ERP / sell price only) */}
+                <>
                         {isComparing && (
                             <div style={{ width: '100px', textAlign: 'right', opacity: 1 }}>
                                 <div style={{ fontSize: '0.8rem', color: 'var(--brand-turquoise)' }}>Comparison Price</div>
@@ -215,9 +181,7 @@ export const PricingRow: React.FC<PricingRowProps> = ({
                                 )}
                             </div>
                         )}
-                    </>
-                )
-                }
+                </>
 
                 {/* Calculator Inputs */}
                 <div style={{ width: '200px', display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'flex-end' }}>

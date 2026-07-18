@@ -1,5 +1,5 @@
 import React from 'react';
-import { Upload, Download, FileSpreadsheet } from 'lucide-react';
+import { Upload, Download } from 'lucide-react';
 import { usePricingStore } from '../store/pricingStore';
 import { FileDropZone } from './FileDropZone';
 import { AvailablePriceLists } from './pricing/AvailablePriceLists';
@@ -55,26 +55,6 @@ export const PricingUpload: React.FC = () => {
                     >
                         <Download size={16} /> Download from Partner Center
                     </a>
-
-                    <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                        <a
-                            href="https://1drv.ms/x/c/8ca7131ed45ed6c2/IQA-bl4RbGRDQ7S7B4trL_ONAUDjcyTh-qbFasvFUMaQ8p4?download=1"
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{ fontSize: '0.85rem', color: 'var(--brand-turquoise)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
-                        >
-                            <FileSpreadsheet size={14} /> Example Jan 2026
-                        </a>
-                        <span style={{ color: 'var(--border-color)' }}>|</span>
-                        <a
-                            href="https://1drv.ms/x/c/8ca7131ed45ed6c2/IQDNJhIkaP3xRaHYFApo_mj-AezRxtFpJVepQXUh06GE_gY?download=1"
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{ fontSize: '0.85rem', color: 'var(--brand-turquoise)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
-                        >
-                            <FileSpreadsheet size={14} /> Example Feb 2026
-                        </a>
-                    </div>
                 </div>
             </div>
 

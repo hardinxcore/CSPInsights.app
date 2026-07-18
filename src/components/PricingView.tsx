@@ -24,7 +24,6 @@ export const PricingView: React.FC = () => {
     const [selectedType, setSelectedType] = useState<string>('Commercial');
     const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
     const [showChangesOnly, setShowChangesOnly] = useState(false);
-    const [showMargins, setShowMargins] = useState(false); // New Margin Toggle
     const { quantities, updateQuantity, clearCart: clearStoreCart } = useCartStore();
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [showSnapshotSelector, setShowSnapshotSelector] = useState(false);
@@ -238,8 +237,6 @@ export const PricingView: React.FC = () => {
                 setSearchQuery={setSearchQuery}
                 showFavoritesOnly={showFavoritesOnly}
                 setShowFavoritesOnly={setShowFavoritesOnly}
-                showMargins={showMargins}
-                setShowMargins={setShowMargins}
                 isComparing={isComparing}
                 comparisonInputRef={comparisonInputRef}
                 showSnapshotSelector={showSnapshotSelector}
@@ -295,7 +292,6 @@ export const PricingView: React.FC = () => {
                                 qty={qty}
                                 isComparing={isComparing}
                                 comparisonMap={comparisonMap}
-                                showMargins={showMargins}
                                 cheapestPriceMap={cheapestPriceMap}
                                 favorites={favorites}
                                 toggleFavorite={toggleFavorite}
